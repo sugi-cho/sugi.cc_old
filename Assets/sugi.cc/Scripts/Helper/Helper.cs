@@ -1,0 +1,148 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.IO;
+
+namespace sugi.cc
+{
+	static class Helper
+	{
+
+		public static void LoadJsonFile<T> (T overwriteTarget, string filePath = "appData.json")
+		{
+			var path = Path.Combine (Application.streamingAssetsPath, filePath);
+			if (File.Exists (path))
+				JsonUtility.FromJsonOverwrite (File.ReadAllText (path), overwriteTarget);
+			else
+				SaveJsonFile (overwriteTarget, filePath);
+		}
+
+		public static void SaveJsonFile<T> (T obj, string filePath = "appData.json")
+		{
+			var json = JsonUtility.ToJson (obj);
+			var path = Path.Combine (Application.streamingAssetsPath, filePath);
+			var dPath = Path.GetDirectoryName (path);
+			if (!Directory.Exists (dPath))
+				Directory.CreateDirectory (dPath);
+
+			using (var writer = new StreamWriter (path))
+				writer.Write (json);
+			#if UNITY_EDITOR
+			UnityEditor.AssetDatabase.Refresh ();
+			#endif
+		}
+
+		public static RenderTexture CreateRenderTexture (RenderTexture s, RenderTexture rt = null, int downSample = 0)
+		{
+			if (rt != null)
+				Helper.ReleaseRenderTexture (rt);
+			rt = CreateRenderTexture (s.width >> downSample, s.height >> downSample);
+			return rt;
+		}
+
+		public static RenderTexture CreateRenderTexture (int width, int height, RenderTexture rt = null, RenderTextureFormat format = RenderTextureFormat.ARGBHalf)
+		{
+			if (rt != null)
+				ReleaseRenderTexture (rt);
+			rt = new RenderTexture (width, height, 16, format);
+			rt.wrapMode = TextureWrapMode.Repeat;
+			rt.filterMode = FilterMode.Bilinear;
+			rt.Create ();
+			RenderTexture.active = rt;
+			GL.Clear (true, true, Color.clear);
+			return rt;
+		}
+
+		public static void ReleaseRenderTexture (RenderTexture rt)
+		{
+			if (rt == null)
+				return;
+			rt.Release ();
+			Object.Destroy (rt);
+		}
+
+		public static T[] MargeArray<T> (T[] array1, T[] array2)
+		{
+			var array = new T[array1.Length + array2.Length];
+			System.Array.Copy (array1, array, array1.Length);
+			System.Array.Copy (array2, 0, array, array1.Length, array2.Length);
+			return array;
+		}
+
+		public static T[] MargeArray<T> (T[] array1, T[] array2, int length)
+		{
+			var array = new T[array1.Length + length];
+			System.Array.Copy (array1, array, array1.Length);
+			System.Array.Copy (array2, 0, array, array1.Length, length);
+			return array;
+		}
+
+		public static T[] MargeArray<T> (T[] array1, T[] array2, int length1, int length2)
+		{
+			System.Array.Copy (array2, 0, array1, length1, length2);
+			return array1;
+		}
+	}
+
+	// from nobnak https://github.com/nobnak/GaussianBlurUnity
+	static class Gaussian
+	{
+		#region gaussianMat
+
+		static Material gaussianMat {
+			get {
+				if (_gaussianMat == null)
+					_gaussianMat = new Material (Shader.Find ("Hidden/Gaussian"));
+				return _gaussianMat;
+			}
+		}
+
+		static Material _gaussianMat;
+
+		#endregion
+
+		public static RenderTexture GaussianFilter (RenderTexture s, RenderTexture d, int nIterations = 3, int lod = 1)
+		{
+			var ds = DownSample (s, lod, gaussianMat);
+			Blur (ds, d, nIterations, gaussianMat);
+			RenderTexture.ReleaseTemporary (ds);
+			return d;
+		}
+
+		static void Blur (RenderTexture src, RenderTexture dst, int nIterations, Material gaussianMat)
+		{
+			var tmp0 = RenderTexture.GetTemporary (src.width, src.height, 0, src.format);
+			var tmp1 = RenderTexture.GetTemporary (src.width, src.height, 0, src.format);
+			var iters = Mathf.Clamp (nIterations, 0, 10);
+			Graphics.Blit (src, tmp0);
+			for (var i = 0; i < iters; i++) {
+				for (var pass = 1; pass < 3; pass++) {
+					tmp1.DiscardContents ();
+					tmp0.filterMode = FilterMode.Bilinear;
+					Graphics.Blit (tmp0, tmp1, gaussianMat, pass);
+					var tmpSwap = tmp0;
+					tmp0 = tmp1;
+					tmp1 = tmpSwap;
+				}
+			}
+			Graphics.Blit (tmp0, dst);
+			RenderTexture.ReleaseTemporary (tmp0);
+			RenderTexture.ReleaseTemporary (tmp1);
+		}
+
+		static RenderTexture DownSample (RenderTexture src, int lod, Material gaussianMat)
+		{
+			var dst = RenderTexture.GetTemporary (src.width, src.height, 0, src.format);
+			src.filterMode = FilterMode.Bilinear;
+			Graphics.Blit (src, dst);
+
+			for (var i = 0; i < lod; i++) {
+				var tmp = RenderTexture.GetTemporary (dst.width >> 1, dst.height >> 1, 0, dst.format);
+				dst.filterMode = FilterMode.Bilinear;
+				Graphics.Blit (dst, tmp, gaussianMat, 0);
+				RenderTexture.ReleaseTemporary (dst);
+				dst = tmp;
+			}
+			return dst;
+		}
+	}
+}
