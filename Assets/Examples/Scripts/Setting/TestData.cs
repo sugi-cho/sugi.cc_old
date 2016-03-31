@@ -28,5 +28,18 @@ public class TestData : MonoBehaviour
 		public Vector2 v2;
 		public Color col;
 		public Matrix4x4 m4x4;
+
+		public override void OnGUIFunc()
+		{
+			base.OnGUIFunc();
+		}
+		protected override void OnLoad()
+		{
+			base.OnLoad();
+		}
+		protected override void OnClose()
+		{
+			base.OnClose();
+		}
 	}
 }

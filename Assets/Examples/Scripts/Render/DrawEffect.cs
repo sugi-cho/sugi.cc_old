@@ -12,30 +12,34 @@ public class DrawEffect : MonoBehaviour
 	public Texture sTex;
 	public bool debug;
 
-	public RenderTexture targetTex;
+	public RenderTexture SetTexture { set { output = value; } get { return output; } }
+	[SerializeField]
+	RenderTexture output;
 
-	void Update ()
+	void Update()
 	{
-		if (!Input.GetMouseButton (0) || !debug)
+		if (!Input.GetMouseButton(0) || !debug)
 			return;
 		var pos = Input.mousePosition;
 		pos.x /= Screen.width;
 		pos.y /= Screen.height;
-		Draw (pos, Color.white, 0.3f, bTex, sTex);
+		Draw(pos, Color.white, 0.3f, bTex, sTex);
 	}
 
-	public void Draw (Vector2 uv, Color color, float radius, Texture brush = null, Texture colorSampler = null)
+	public void Draw(Vector2 uv, Color color, float radius, Texture brush = null, Texture colorSampler = null)
 	{
 		uv.x = uv.x % 1.0f;
 		uv.y = uv.y % 1.0f;
 
-		if (targetTex == null)
+		if (output == null)
 			return;
-		
-		mat.SetTexture ("_MainTex", brush);
-		mat.SetTexture ("_ScreenTex", colorSampler);
-		mat.SetColor ("_Color", color);
 
-		targetTex.DrawTexture (uv, radius, brush, mat);
+		if (mat != null)
+		{
+			mat.SetTexture("_MainTex", brush);
+			mat.SetTexture("_ScreenTex", colorSampler);
+			mat.SetColor("_Color", color);
+		}
+		output.DrawTexture(uv, radius, brush, mat);
 	}
 }

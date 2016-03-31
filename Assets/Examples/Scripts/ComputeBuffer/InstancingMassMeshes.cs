@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections;
-using System.Collections.Generic;
+
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -95,6 +94,7 @@ public class InstancingMassMeshes : MonoBehaviour
 		updater.Dispatch(kernel, numInstances / 1024+1, 1, 1);
 	}
 
+	#region struct for ComputeBuffer
 	struct VertexData
 	{
 		public Vector3 vert;
@@ -108,4 +108,5 @@ public class InstancingMassMeshes : MonoBehaviour
 		public Quaternion rotation;
 		public float scale;//i use only uniform scale!
 	}
+	#endregion
 }
