@@ -105,9 +105,14 @@ namespace sugi.cc
 				OnLoad();
 			}
 
-			public void SaveAndClose()
+			public void Save()
 			{
 				Helper.SaveJsonFile(this, filePath);
+			}
+
+			public void SaveAndClose()
+			{
+				Save();
 				edit = false;
 				OnClose();
 			}
