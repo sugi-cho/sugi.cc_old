@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Linq;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace sugi.cc
 {
@@ -91,6 +92,19 @@ namespace sugi.cc
 		{
 			System.Array.Copy(array2, 0, array1, length1, length2);
 			return array1;
+		}
+
+		public static ComputeBuffer CreateComputeBuffer<T>(int count)
+		{
+			return new ComputeBuffer(count, Marshal.SizeOf(typeof(T)));
+		}
+
+		public static ComputeBuffer CreateComputeBuffer<T>(T[] array, bool setData = false)
+		{
+			var buffer = CreateComputeBuffer<T>(array.Length);
+			if (setData)
+				buffer.SetData(array);
+			return buffer;
 		}
 	}
 

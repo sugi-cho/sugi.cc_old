@@ -24,6 +24,7 @@ public class NetworkController : NetworkBehaviour
 		if (NetworkServer.active)
 		{
 			var go = NetworkServer.FindLocalObject(nid);
+
 			if (go == null)
 				return;
 			Instance.RemoveObject(go);

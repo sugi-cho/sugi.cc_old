@@ -45,7 +45,7 @@
 			half3 hsv = rgb2hsv(c);
 			hsv.y = blendScreen(hsv.y,saturate(bg.a)*0.3);
 			c.rgb = hsv2rgb(hsv);
-			c.rgb = blendScreen(c.rgb, bt.rgb*bt.rgb);
+			c.rgb = blendScreen(c.rgb, saturate(bt.rgb*bt.rgb));
 
 			half2 uv = i.uv * half2(TS.y*TS.z,1);
 			half4 w = tex2D(_Washi, uv * _WP.x);

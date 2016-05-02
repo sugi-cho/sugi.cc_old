@@ -28,6 +28,13 @@ public class ReconnectableNetworkManager : NetworkManager
 		else
 			Invoke("Connect", 1f);
 	}
+	public override void OnClientSceneChanged(NetworkConnection conn)
+	{
+		base.OnClientSceneChanged(conn);
+		var nets = Resources.LoadAll<NetworkIdentity>("NetworkPrefabs");
+		foreach (var net in nets)
+			ClientScene.RegisterPrefab(net.gameObject);
+	}
 	public override void OnClientError(NetworkConnection conn, int errorCode)
 	{
 		Debug.LogFormat("error code {0}", errorCode);
