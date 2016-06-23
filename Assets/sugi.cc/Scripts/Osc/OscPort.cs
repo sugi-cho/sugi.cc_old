@@ -62,7 +62,7 @@ namespace Osc
 
         public IPAddress FindFromHostName(string hostname)
         {
-            var addresses = Dns.GetHostAddresses(defaultRemoteHost);
+            var addresses = Dns.GetHostAddresses(hostname);
             IPAddress address = IPAddress.None;
             for (var i = 0; i < addresses.Length; i++)
             {
