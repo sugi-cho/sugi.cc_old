@@ -6,6 +6,19 @@ namespace sugi.cc
 {
     public class EditorExtensions
     {
+        [MenuItem("Assets/CheckType")]
+        public static void CheckType()
+        {
+            Debug.Log(Application.dataPath + "/AnimationTexture/");
+            Debug.Log(AssetDatabase.IsValidFolder(Application.dataPath + "/AnimationTexture/"));
+            var obj = Selection.activeObject;
+            Debug.Log(obj.GetType());
+        }
+        [MenuItem("Assets/Select All/Models")]
+        public static void SelectAllModels()
+        {
+            Selection.objects = Selection.GetTransforms(SelectionMode.DeepAssets);
+        }
         [MenuItem("Assets/Select All/Materials")]
         public static void SelectAllMaterial()
         {

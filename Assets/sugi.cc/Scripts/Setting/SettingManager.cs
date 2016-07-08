@@ -18,6 +18,7 @@ namespace sugi.cc
                 Instance.settings = Instance.settings.OrderBy(b => b.filePath).ToList();
             }
         }
+        public static void AddExtraGuiFunc(Action func) { Instance.extraGuiFunc += func; }
 
         #region instance
 
@@ -42,6 +43,7 @@ namespace sugi.cc
         bool edit;
         Rect windowRect = Rect.MinMaxRect(0, 0, Math.Min(Screen.width, 1024f), Math.Min(Screen.height, 768f));
         Vector2 scroll;
+        Action extraGuiFunc;
 
         public void HideGUI()
         {
@@ -90,6 +92,8 @@ namespace sugi.cc
                 else if (GUILayout.Button(setting.filePath))
                     setting.edit = true;
             });
+            if (extraGuiFunc != null)
+                extraGuiFunc.Invoke();
             GUILayout.EndScrollView();
             GUI.DragWindow();
         }
