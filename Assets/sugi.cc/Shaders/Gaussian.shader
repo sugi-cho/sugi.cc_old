@@ -89,6 +89,7 @@
 			CGPROGRAM
 			#pragma vertex vertDownsample
 			#pragma fragment fragDownsample
+			#pragma target 3.0
 			ENDCG
 		}
 		// 1 : Horizontal Separable Gaussian
@@ -96,6 +97,7 @@
 			CGPROGRAM
 			#pragma vertex vertBlurH
 			#pragma fragment fragBlur
+			#pragma target 3.0
 			ENDCG
 		}
 		// 2 : Vertical Separable Gaussian
@@ -103,6 +105,7 @@
 			CGPROGRAM
 			#pragma vertex vertBlurV
 			#pragma fragment fragBlur
+			#pragma target 3.0
 			ENDCG
 		}
 	} 

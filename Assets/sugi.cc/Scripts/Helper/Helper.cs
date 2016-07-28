@@ -50,6 +50,7 @@ namespace sugi.cc
             rt.wrapMode = TextureWrapMode.Repeat;
             rt.filterMode = FilterMode.Bilinear;
             rt.Create();
+            rt.name = "helper.createRenderTexture";
             RenderTexture.active = rt;
             GL.Clear(true, true, Color.clear);
             return rt;
@@ -57,7 +58,12 @@ namespace sugi.cc
 
         public static RenderTexture[] CreateRts(RenderTexture source, RenderTexture[] rts = null, int downSample = 0)
         {
-            return Enumerable.Range(0, 2).Select(b => CreateRenderTexture(source, rts != null && rts.Length == 2 ? rts[b] : null, downSample)).ToArray();
+            return Enumerable.Range(0, 2).Select(b =>
+            {
+                var rt = CreateRenderTexture(source, rts != null && rts.Length == 2 ? rts[b] : null, downSample);
+                rt.name = "helper.createRts." + b;
+                return rt;
+            }).ToArray();
         }
 
         public static bool CheckRtSize(Texture source, Texture target, int downSample = 0)
@@ -71,6 +77,24 @@ namespace sugi.cc
                 return;
             rt.Release();
             Object.Destroy(rt);
+        }
+
+        public static Vector3 RandomMinMaxPoint(Vector3 pointMin, Vector3 pointMax)
+        {
+            return new Vector3(
+                Random.Range(pointMin.x, pointMax.x),
+                Random.Range(pointMin.y, pointMax.y),
+                Random.Range(pointMin.z, pointMax.z)
+            );
+        }
+        public static T[] ResizeArray<T>(T[] array, int size)
+        {
+            var last = array.LastOrDefault();
+            if (size < array.Length)
+                array = array.Where((val, idx) => idx < size).ToArray();
+            else
+                array = MargeArray(array, Enumerable.Repeat(last, size - array.Length).ToArray());
+            return array;
         }
 
         public static T[] MargeArray<T>(T[] array1, T[] array2)

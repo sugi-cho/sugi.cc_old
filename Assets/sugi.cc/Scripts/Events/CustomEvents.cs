@@ -20,4 +20,19 @@ namespace sugi.cc
     public class RenderTextureEvent : UnityEvent<RenderTexture> { }
     [System.Serializable]
     public class Matrix4x4Event : UnityEvent<Matrix4x4> { }
+
+    #region set to property
+    [System.Serializable]
+    public class StringValueEvent : UnityEvent<string, object> { }
+    [System.Serializable]
+    public class StringFloatEvent : UnityEvent<StringFloatPair> { }
+    [System.Serializable]
+    public class StringColorEvent : UnityEvent<StringColorPair> { }
+    [System.Serializable]
+    public class StringVectorEvent : UnityEvent<StringVectorPair> { }
+    [System.Serializable]
+    public class StringTextureEvent : UnityEvent<StringTexturePair> { }
+    [System.Serializable]
+    public class StringMatrixEvent : UnityEvent<StringMatrixPair> { }
+    #endregion
 }

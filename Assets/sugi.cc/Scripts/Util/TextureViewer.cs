@@ -15,12 +15,25 @@ namespace sugi.cc
         Rect windowRect = Rect.MinMaxRect(0, 0, 512f, 512f);
         Texture currentTex;
 
+        RenderTexture showTex;
+
+        Material blitMat { get { if (_mat == null) _mat = new Material(Shader.Find("Hidden/ShowTex/CombineAlpha")); return _mat; } }
+        Material _mat;
+        void CreateRt()
+        {
+            if (Helper.CheckRtSize(currentTex, showTex))
+                showTex = Helper.CreateRenderTexture(currentTex.width, currentTex.height, showTex, RenderTextureFormat.ARGB32);
+            showTex.name = currentTex.name;
+            Graphics.Blit(currentTex, showTex, blitMat);
+        }
+
         void SetCurrentTex()
         {
             viewingIndex = (int)Mathf.Repeat(viewingIndex, textures.Length);
             currentTex = textures[viewingIndex];
             windowRect.width = currentTex.width + 32;
             windowRect.height = currentTex.height + 32;
+            CreateRt();
         }
         void Update()
         {
@@ -30,6 +43,7 @@ namespace sugi.cc
                     viewingIndex--;
                 else if (Input.GetKeyDown(KeyCode.RightArrow))
                     viewingIndex++;
+                textures = FindObjectsOfType<Texture>().Where(b => b != showTex).ToArray();
                 SetCurrentTex();
             }
 
@@ -37,11 +51,6 @@ namespace sugi.cc
                 return;
             show = !show;
             Cursor.visible = show;
-            if (show)
-            {
-                textures = FindObjectsOfType<Texture>();
-                SetCurrentTex();
-            }
         }
         void OnGUI()
         {
@@ -61,7 +70,7 @@ namespace sugi.cc
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            GUILayout.Label(currentTex);
+            GUILayout.Label(showTex);
 
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
