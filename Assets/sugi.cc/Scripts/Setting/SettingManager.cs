@@ -75,19 +75,26 @@ namespace sugi.cc
             {
                 if (setting.edit)
                 {
+                    GUILayout.Space(16);
+                    GUILayout.Label(setting.filePath);
+
                     GUILayout.BeginHorizontal();
                     GUILayout.Space(16f);
+
                     GUILayout.BeginVertical();
-                    GUILayout.Label(setting.filePath);
                     setting.OnGUIFunc();
+                    GUILayout.EndVertical();
+
+                    GUILayout.EndHorizontal();
+
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Save and Close"))
                         setting.SaveAndClose();
                     if (GUILayout.Button("Cancel"))
                         setting.CancelAndClose();
                     GUILayout.EndHorizontal();
-                    GUILayout.EndVertical();
-                    GUILayout.EndHorizontal();
+
+                    GUILayout.Space(16);
                 }
                 else if (GUILayout.Button(setting.filePath))
                     setting.edit = true;
