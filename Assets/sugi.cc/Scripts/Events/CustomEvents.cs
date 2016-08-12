@@ -35,4 +35,9 @@ namespace sugi.cc
     [System.Serializable]
     public class StringMatrixEvent : UnityEvent<StringMatrixPair> { }
     #endregion
+
+    [System.Serializable]
+    public class MeshEvent : UnityEvent<Mesh> { }
+    [System.Serializable]
+    public class ColorEvent : UnityEvent<Color> { }
 }

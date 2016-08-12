@@ -23,6 +23,18 @@ namespace sugi.cc
         byte[] _receiveBuffer;
         Thread _reader;
 
+        public void AddAction(string pass, UnityAction<object[]> action)
+        {
+            if (_oscEventMap.ContainsKey(pass))
+                _oscEventMap[pass].AddListener(action);
+            else
+            {
+                var oscEvent = new OscMessageEvent();
+                oscEvent.AddListener(action);
+                _oscEventMap.Add(pass, oscEvent);
+            }
+        }
+
         public void ShowMessage(Capsule oscCapsule)
         {
             var dataString = "";
@@ -33,6 +45,14 @@ namespace sugi.cc
 
         protected override void OnEnable()
         {
+            var setting = new Setting()
+            {
+                localPort = this.localPort,
+                defaultRemoteHost = this.defaultRemoteHost,
+                defaultRemotePort = this.defaultRemotePort,
+                limitReceiveBiuffer = this.limitReceiveBuffer
+            };
+            SettingManager.AddSettingMenu(setting, "OscControll/setting.json");
             SettingManager.AddExtraGuiFunc(ShowReceivedOscOnGUI);
             _oscEventMap = oscEvents.ToDictionary(b => b.path, b => b.onOsc);
             try
@@ -138,6 +158,30 @@ namespace sugi.cc
                 foreach (var osc in _received)
                     GUILayout.Label(osc.message.ToString());
             GUILayout.EndVertical();
+        }
+
+        [System.Serializable]
+        public class Setting : SettingManager.Setting
+        {
+            public int localPort = 0;
+            public string defaultRemoteHost = "localhost";
+            public int defaultRemotePort = 10000;
+            public int limitReceiveBiuffer = 10;
+
+            protected override void OnLoad()
+            {
+                Instance.localPort = localPort;
+                Instance.defaultRemoteHost = defaultRemoteHost;
+                Instance.defaultRemotePort = defaultRemotePort;
+                Instance.limitReceiveBuffer = limitReceiveBiuffer;
+            }
+            public override void OnGUIFunc()
+            {
+                base.OnGUIFunc();
+                GUI.contentColor = Color.red;
+                GUILayout.Label("neet restart to apply setting!!");
+                GUI.contentColor = Color.white;
+            }
         }
     }
 }

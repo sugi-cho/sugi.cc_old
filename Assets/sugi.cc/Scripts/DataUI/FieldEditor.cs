@@ -259,6 +259,10 @@ namespace DataUI
                 if (fieldType == typeof(Matrix4x4))
                     return FieldKindEnum.Matrix;
             }
+            if (fieldType.IsArray)
+            {
+
+            }
 
             return FieldKindEnum.Unknown;
         }
