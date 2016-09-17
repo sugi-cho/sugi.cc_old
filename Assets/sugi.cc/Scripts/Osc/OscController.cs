@@ -16,6 +16,7 @@ namespace sugi.cc
         public static OscController Instance { get { if (_Instance == null) _Instance = FindObjectOfType<OscController>(); return _Instance; } }
         static OscController _Instance;
 
+        public bool dontDestroyOnLoad;
         public PathEventPair[] oscEvents;
         Dictionary<string, OscMessageEvent> _oscEventMap;
 
@@ -66,6 +67,8 @@ namespace sugi.cc
 
                 _reader = new Thread(Reader);
                 _reader.Start();
+                if (dontDestroyOnLoad)
+                    DontDestroyOnLoad(gameObject);
             }
             catch (System.Exception e)
             {
@@ -101,6 +104,11 @@ namespace sugi.cc
                 }
         }
 
+        public void Send(MessageEncoder oscMessage, string address, int port)
+        {
+            var remote = new IPEndPoint(FindFromHostName(address), port);
+            Send(oscMessage.Encode(), remote);
+        }
         public override void Send(byte[] oscData, IPEndPoint remote)
         {
             try

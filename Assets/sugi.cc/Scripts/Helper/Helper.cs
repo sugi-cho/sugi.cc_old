@@ -102,6 +102,7 @@ namespace sugi.cc
             var array = new T[array1.Length + array2.Length];
             System.Array.Copy(array1, array, array1.Length);
             System.Array.Copy(array2, 0, array, array1.Length, array2.Length);
+            array1 = array2 = null;
             return array;
         }
 
@@ -110,6 +111,7 @@ namespace sugi.cc
             var array = new T[array1.Length + length];
             System.Array.Copy(array1, array, array1.Length);
             System.Array.Copy(array2, 0, array, array1.Length, length);
+            array1 = array2 = null;
             return array;
         }
 

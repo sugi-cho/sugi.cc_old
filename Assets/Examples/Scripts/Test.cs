@@ -2,37 +2,28 @@
 using System.Collections;
 using sugi.cc;
 using System.Reflection;
+using System.Collections.Generic;
+using MidiJack;
 
 public class Test : MonoBehaviour
 {
-    [Test(2)]
-    public Material drawMat;
-    public RenderTexture rt;
+    [SerializeField]
+    Texture2D tex2d;
 
-    Camera cam { get { if (_cam == null) _cam = GetComponent<Camera>(); return _cam; } }
-    Camera _cam;
     void Start()
     {
-        var fis = GetType().GetFields();
-        foreach (var fi in fis)
-        {
-            var attr = System.Attribute.GetCustomAttribute(fi, typeof(TestAttribute)) as TestAttribute;
-        }
-        rt = new RenderTexture(512, 512, 24);
+        tex2d = new Texture2D(512, 512, TextureFormat.RGBA32, false);
     }
 
     void Update()
     {
-        cam.targetTexture = rt;
-        RenderTexture.active = rt;
-        drawMat.DrawFullscreenQuad();
-        cam.targetTexture = null;
-    }
+        var ch = MidiChannel.All;
+        Debug.Log(ch);
+        var bn = (int)ch;
+        Debug.Log(bn);
+        Debug.Log((MidiChannel)bn);
 
-    void OnPostRender()
-    {
-        cam.targetTexture = rt;
-        drawMat.DrawFullScreenQuadNxN();
-        cam.targetTexture = null;
+        Debug.Log(RenderTexture.active.format);
+        Graphics.CopyTexture(RenderTexture.active, tex2d);
     }
 }

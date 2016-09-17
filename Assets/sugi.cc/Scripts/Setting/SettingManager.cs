@@ -45,6 +45,10 @@ namespace sugi.cc
         Vector2 scroll;
         Action extraGuiFunc;
 
+        GUIStyle boxStyle { get { if (_style == null) { _style = new GUIStyle("box"); } return _style; } }
+        [SerializeField]
+        GUIStyle _style;
+
         public void HideGUI()
         {
             edit = false;
@@ -76,7 +80,11 @@ namespace sugi.cc
                 if (setting.edit)
                 {
                     GUILayout.Space(16);
+
+                    GUILayout.BeginVertical(boxStyle);
+                    GUI.contentColor = Color.yellow;
                     GUILayout.Label(setting.filePath);
+                    GUI.contentColor = Color.white;
 
                     GUILayout.BeginHorizontal();
                     GUILayout.Space(16f);
@@ -93,6 +101,8 @@ namespace sugi.cc
                     if (GUILayout.Button("Cancel"))
                         setting.CancelAndClose();
                     GUILayout.EndHorizontal();
+
+                    GUILayout.EndVertical();
 
                     GUILayout.Space(16);
                 }
