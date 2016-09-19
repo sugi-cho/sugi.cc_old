@@ -16,6 +16,17 @@ namespace sugi.cc
         }
     }
     [System.Serializable]
+    public struct StringIntPair
+    {
+        public string propName;
+        public int value;
+        public StringIntPair(string s, int i)
+        {
+            propName = s;
+            value = i;
+        }
+    }
+    [System.Serializable]
     public struct StringFloatPair
     {
         public string propName;

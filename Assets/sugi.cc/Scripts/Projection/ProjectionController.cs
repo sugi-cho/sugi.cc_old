@@ -107,25 +107,44 @@ namespace sugi.cc
         {
             public int numX = 2;
             public int numY = 1;
-            public float[] blendVerticalRanges;
-            public float[] blendHorizonalRanges;
-            public Vector2[] quadWarpProps;
             public float gamma = 2.2f;
+            public float[] blendHorizonalRanges;
+            public float[] blendVerticalRanges;
+            public Vector2[] quadWarpProps;
+
+            string xString;
+            string yString;
+            string gammaString;
+            string[] blendHStrings;
+            string[] blendVStrings;
+            string[] quadXStrings;
+            string[] quadYStrings;
 
             int editingQuadWarpIdx;
 
             public override void OnGUIFunc()
             {
-                numX = (int)FloatField("num horizonal", numX);
-                numY = (int)FloatField("num vertical", numY);
-                gamma = FloatField("blend gamma", gamma);
+                numX = (int)FloatField("num horizonal", numX, ref xString);
+                numY = (int)FloatField("num vertical", numY, ref yString);
+                gamma = FloatField("blend gamma", gamma, ref gammaString);
 
                 ValidateVals();
 
-                FloatArrayField("blend horizonal:", blendHorizonalRanges);
-                FloatArrayField("blend vertical:", blendVerticalRanges);
+                FloatArrayField("blend horizonal:", blendHorizonalRanges, ref blendHStrings);
+                FloatArrayField("blend vertical:", blendVerticalRanges, ref blendVStrings);
 
                 QuadWarpPropField();
+            }
+
+            void InitializeStringVals()
+            {
+                xString = numX.ToString();
+                yString = numY.ToString();
+                gammaString = gamma.ToString();
+                blendHStrings = blendHorizonalRanges.Select(b => b.ToString()).ToArray();
+                blendVStrings = blendVerticalRanges.Select(b => b.ToString()).ToArray();
+                quadXStrings = quadWarpProps.Select(b => b.x.ToString()).ToArray();
+                quadYStrings = quadWarpProps.Select(b => b.y.ToString()).ToArray();
             }
 
             void ValidateVals()
@@ -134,9 +153,15 @@ namespace sugi.cc
                 numY = Mathf.Max(1, numY);
 
                 if (blendHorizonalRanges.Length != numX - 1)
+                {
                     blendHorizonalRanges = new float[numX - 1];
+                    blendHStrings = blendHorizonalRanges.Select(b => b.ToString()).ToArray();
+                }
                 if (blendVerticalRanges.Length != numY - 1)
+                {
                     blendVerticalRanges = new float[numY - 1];
+                    blendVStrings = blendVerticalRanges.Select(b => b.ToString()).ToArray();
+                }
                 if (quadWarpProps.Length != numX * numY * 4)
                 {
                     quadWarpProps = Enumerable.Range(0, numX * numY * 4)
@@ -144,6 +169,8 @@ namespace sugi.cc
                             (i % 4 == 1 || i % 4 == 3) ? 1f : 0f,
                             1 < i % 4 ? 1f : 0)
                         ).ToArray();
+                    quadXStrings = quadWarpProps.Select(b => b.x.ToString()).ToArray();
+                    quadYStrings = quadWarpProps.Select(b => b.y.ToString()).ToArray();
                 }
                 Instance.BuildProjections();
             }
@@ -151,6 +178,7 @@ namespace sugi.cc
             protected override void OnLoad()
             {
                 ValidateVals();
+                InitializeStringVals();
                 Instance.BuildProjections();
             }
             protected override void OnClose()
@@ -159,29 +187,27 @@ namespace sugi.cc
                 Instance.BuildProjections();
             }
 
-            float FloatField(string label, float val, float minVal = 0, float maxVal = 0)
+            float FloatField(string label, float val, ref string strVal)
             {
                 GUILayout.BeginHorizontal();
                 if (label.Length > 0)
                     GUILayout.Label(string.Format("{0}:{1}", label, val));
-                var data = GUILayout.TextField(val.ToString());
+                strVal = GUILayout.TextField(strVal);
                 float f;
-                if (float.TryParse(data, out f))
+                if (float.TryParse(strVal, out f))
                     val = f;
-                if (maxVal - minVal != 0)
-                    val = GUILayout.HorizontalSlider(val, minVal, maxVal);
                 GUILayout.EndHorizontal();
                 return val;
             }
-            void FloatArrayField(string label, float[] vals)
+            void FloatArrayField(string label, float[] vals, ref string[] strVals)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(label);
                 for (var i = 0; i < vals.Length; i++)
                 {
                     var val = vals[i];
-                    var data = GUILayout.TextField(val.ToString());
-                    if (float.TryParse(data, out val))
+                    strVals[i] = GUILayout.TextField(strVals[i]);
+                    if (float.TryParse(strVals[i], out val))
                         vals[i] = val;
                 }
                 GUILayout.EndHorizontal();
@@ -219,12 +245,12 @@ namespace sugi.cc
 
                         CenterLabel(string.Format("QuadWarp({0}-{1})", x, y));
                         GUILayout.BeginHorizontal();
-                        quadWarpProps[4 * i + 2] = Vector2Field("UpperLeft:", quadWarpProps[4 * i + 2]);
-                        quadWarpProps[4 * i + 3] = Vector2Field("UpperRight:", quadWarpProps[4 * i + 3]);
+                        quadWarpProps[4 * i + 2] = Vector2Field("UpperLeft:", quadWarpProps[4 * i + 2], ref quadXStrings[4 * i + 2], ref quadYStrings[4 * i + 2]);
+                        quadWarpProps[4 * i + 3] = Vector2Field("UpperRight:", quadWarpProps[4 * i + 3], ref quadXStrings[4 * i + 3], ref quadYStrings[4 * i + 3]);
                         GUILayout.EndHorizontal();
                         GUILayout.BeginHorizontal();
-                        quadWarpProps[4 * i + 0] = Vector2Field("BottomLeft:", quadWarpProps[4 * i + 0]);
-                        quadWarpProps[4 * i + 1] = Vector2Field("BottomRight:", quadWarpProps[4 * i + 1]);
+                        quadWarpProps[4 * i + 0] = Vector2Field("BottomLeft:", quadWarpProps[4 * i + 0], ref quadXStrings[4 * i + 0], ref quadYStrings[4 * i + 0]);
+                        quadWarpProps[4 * i + 1] = Vector2Field("BottomRight:", quadWarpProps[4 * i + 1], ref quadXStrings[4 * i + 1], ref quadYStrings[4 * i + 1]);
                         GUILayout.EndHorizontal();
                         GUILayout.Space(16f);
                     }
@@ -238,14 +264,14 @@ namespace sugi.cc
                 GUILayout.EndHorizontal();
             }
 
-            Vector2 Vector2Field(string label, Vector2 vec2)
+            Vector2 Vector2Field(string label, Vector2 vec2, ref string xVal, ref string yVal)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(label);
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginHorizontal(GUILayout.MaxWidth(300f));
-                vec2.x = FloatField("", vec2.x);
-                vec2.y = FloatField("", vec2.y);
+                vec2.x = FloatField("", vec2.x, ref xVal);
+                vec2.y = FloatField("", vec2.y, ref yVal);
                 GUILayout.EndHorizontal();
                 GUILayout.EndHorizontal();
                 return vec2;
