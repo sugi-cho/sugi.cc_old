@@ -20,6 +20,8 @@ namespace sugi.cc
         }
         public static void AddExtraGuiFunc(Action func) { Instance.extraGuiFunc += func; }
 
+        public static GUIStyle BoxStyle { get { return Instance.boxStyle; } }
+
         #region instance
 
         public static SettingManager Instance

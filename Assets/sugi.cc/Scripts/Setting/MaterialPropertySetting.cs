@@ -65,6 +65,7 @@ namespace sugi.cc
         }
 
         #region use pass "/material/float" s,s,f
+        [Osc("/material/float")]
         public void SetFloatFromOsc(object[] msgs)
         {
             if (msgs.Length < 3) return;
@@ -88,7 +89,9 @@ namespace sugi.cc
             setting.floatProperties[pairIdx.idx].value = value;
         }
         #endregion
+
         #region use pass "/material/color" s,s,f,f,f,f
+        [Osc("/material/color")]
         public void SetColorFromOsc(object[] msgs)
         {
             if (msgs.Length < 6) return;
@@ -112,7 +115,9 @@ namespace sugi.cc
             setting.colorProperties[pairIdx.idx].value = value;
         }
         #endregion
+
         #region use pass "/material/vector" s,s,f,f,f,f
+        [Osc("/material/vector")]
         public void SetVectorFromOsc(object[] msgs)
         {
             if (msgs.Length < 6) return;
@@ -136,6 +141,7 @@ namespace sugi.cc
             setting.vectorProperties[pairIdx.idx].value = value;
         }
         #endregion
+
         void InitializeSettings()
         {
             if (settings.Length != targetMaterials.Length)
@@ -148,10 +154,7 @@ namespace sugi.cc
 
         void Start()
         {
-            OscController.Instance.AddAction("/material/float", SetFloatFromOsc);
-            OscController.Instance.AddAction("/material/color", SetColorFromOsc);
-            OscController.Instance.AddAction("/material/vector", SetVectorFromOsc);
-
+            OscController.Instance.AddCallbacks(this);
             InitializeSettings();
             for (var i = 0; i < settings.Length; i++)
             {
@@ -285,7 +288,6 @@ namespace sugi.cc
                     {
                         var prop = colorProperties[i];
                         prop.propName = prop.propName == null ? "" : prop.propName;
-                        prop.value = prop.value == null ? Color.white : prop.value;
                         GUILayout.BeginHorizontal();
                         GUILayout.Label("propName:");
                         colorProperties[i].propName = GUILayout.TextField(prop.propName, GUILayout.Width(240));
@@ -328,7 +330,6 @@ namespace sugi.cc
                     {
                         var prop = vectorProperties[i];
                         prop.propName = prop.propName == null ? "" : prop.propName;
-                        prop.value = prop.value == null ? Vector4.zero : prop.value;
                         GUILayout.BeginHorizontal();
                         GUILayout.Label("propName:");
                         vectorProperties[i].propName = GUILayout.TextField(prop.propName, GUILayout.Width(240));

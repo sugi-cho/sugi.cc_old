@@ -1,5 +1,4 @@
 ﻿using System.Net.Sockets;
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -7,6 +6,7 @@ using System.Linq;
 using Osc;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Reflection;
 
 
 namespace sugi.cc
@@ -18,30 +18,60 @@ namespace sugi.cc
 
         public bool dontDestroyOnLoad;
         public PathEventPair[] oscEvents;
-        Dictionary<string, OscMessageEvent> _oscEventMap;
+
+        Dictionary<string, UnityAction<Capsule>> oscActionMap;
+        Dictionary<string, LinkedList<string>> oscSendPathInfoMap;
+
+        [SerializeField]
+        List<OscCallback> OscCallbackList;
+        bool showReserve;
+        bool showSend;
 
         Socket _udp;
         byte[] _receiveBuffer;
         Thread _reader;
 
-        public void AddAction(string pass, UnityAction<object[]> action)
-        {
-            if (_oscEventMap.ContainsKey(pass))
-                _oscEventMap[pass].AddListener(action);
-            else
-            {
-                var oscEvent = new OscMessageEvent();
-                oscEvent.AddListener(action);
-                _oscEventMap.Add(pass, oscEvent);
-            }
-        }
+        public delegate void OscDelegate(object[] data);
 
-        public void ShowMessage(Capsule oscCapsule)
+
+        public void AddCallbacks(Object target)
         {
-            var dataString = "";
-            foreach (var o in oscCapsule.message.data)
-                dataString += o.ToString() + " ";
-            Debug.LogFormat("ip:{0}, path:{1}, data: {2}", oscCapsule.ip, oscCapsule.message.path, dataString);
+            target.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                 .Select(b => new { attrs = OscAttribute.GetCustomAttributes(b, typeof(OscAttribute)), method = b })
+                 .Where(b => 0 < b.attrs.Length)
+                 .ToList().ForEach(b =>
+                 {
+                     foreach (OscAttribute attr in b.attrs)
+                     {
+                         var path = attr.oscPath;
+                         var callback = new OscCallback(path, target, b.method.Name);
+                         AddCallback(path, callback);
+                     }
+                 });
+        }
+        public void AddCallback(string path, OscDelegate oscDelegate)
+        {
+            var oscCalllback = new OscCallback(path, oscDelegate);
+            AddCallback(path, oscCalllback);
+
+        }
+        void AddCallback(string path, OscCallback callback)
+        {
+            if (oscActionMap == null)
+                oscActionMap = new Dictionary<string, UnityAction<Capsule>>();
+            if (OscCallbackList == null)
+                OscCallbackList = new List<OscCallback>();
+
+            if (oscActionMap.ContainsKey(path))
+                oscActionMap[path] += callback.Invoke;
+            else
+                oscActionMap[path] = callback.Invoke;
+
+            if (!OscCallbackList.Contains(callback))
+            {
+                OscCallbackList.Add(callback);
+                OscCallbackList = OscCallbackList.OrderBy(b => b.oscPath).ToList();
+            }
         }
 
         protected override void OnEnable()
@@ -55,7 +85,19 @@ namespace sugi.cc
             };
             SettingManager.AddSettingMenu(setting, "OscControll/setting.json");
             SettingManager.AddExtraGuiFunc(ShowReceivedOscOnGUI);
-            _oscEventMap = oscEvents.ToDictionary(b => b.path, b => b.onOsc);
+            foreach (var oscEvent in oscEvents)
+            {
+                var path = oscEvent.path;
+                var onOsc = oscEvent.onOsc;
+                for (var i = 0; i < onOsc.GetPersistentEventCount(); i++)
+                {
+                    var target = onOsc.GetPersistentTarget(i);
+                    var method = onOsc.GetPersistentMethodName(i);
+                    var callback = new OscCallback(path, target, method);
+                    AddCallback(path, callback);
+                }
+            }
+
             try
             {
                 base.OnEnable();
@@ -75,6 +117,7 @@ namespace sugi.cc
                 RaiseError(e);
                 enabled = false;
             }
+
         }
         protected override void OnDisable()
         {
@@ -99,15 +142,36 @@ namespace sugi.cc
                 {
                     var c = _received.Dequeue();
                     OnReceive.Invoke(c);
-                    if (_oscEventMap.ContainsKey(c.message.path))
-                        _oscEventMap[c.message.path].Invoke(c.message.data);
+                    if (oscActionMap.ContainsKey(c.message.path))
+                        oscActionMap[c.message.path].Invoke(c);
                 }
         }
 
-        public void Send(MessageEncoder oscMessage, string address, int port)
+        public new void Send(MessageEncoder oscMessage, IPEndPoint remote)
         {
-            var remote = new IPEndPoint(FindFromHostName(address), port);
             Send(oscMessage.Encode(), remote);
+            AddOscSendData(oscMessage, remote);
+        }
+        void AddOscSendData(MessageEncoder oscMessage, IPEndPoint remote)
+        {
+            var path = oscMessage.path;
+            if (oscSendPathInfoMap == null)
+                oscSendPathInfoMap = new Dictionary<string, LinkedList<string>>();
+            LinkedList<string> sendInfoList;
+            if (oscSendPathInfoMap.ContainsKey(path))
+                sendInfoList = oscSendPathInfoMap[path];
+            else
+            {
+                sendInfoList = new LinkedList<string>();
+                oscSendPathInfoMap.Add(path, sendInfoList);
+            }
+            var infoText = remote.ToString() + " { ";
+            foreach (var o in oscMessage.rawdata)
+                infoText += o + ", ";
+            infoText += "} ";
+            sendInfoList.AddLast(infoText);
+            while (5 < sendInfoList.Count)
+                sendInfoList.RemoveFirst();
         }
         public override void Send(byte[] oscData, IPEndPoint remote)
         {
@@ -143,16 +207,16 @@ namespace sugi.cc
                         }
                     }
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     RaiseError(e);
                 }
             }
         }
 
-        [Serializable]
+        [System.Serializable]
         public class OscMessageEvent : UnityEvent<object[]> { }
-        [Serializable]
+        [System.Serializable]
         public struct PathEventPair
         {
             public string path;
@@ -161,11 +225,85 @@ namespace sugi.cc
 
         void ShowReceivedOscOnGUI()
         {
-            GUILayout.BeginVertical();
-            lock (_received)
-                foreach (var osc in _received)
-                    GUILayout.Label(osc.message.ToString());
-            GUILayout.EndVertical();
+            showReserve = GUILayout.Toggle(showReserve, "show reserved osc info?");
+            if (showReserve)
+            {
+                GUILayout.BeginVertical(SettingManager.BoxStyle);
+                foreach (var callback in OscCallbackList)
+                    callback.ShowInfoGUI();
+                GUILayout.EndVertical();
+            }
+            showSend = GUILayout.Toggle(showSend, "show send osc info?");
+            if (showSend)
+            {
+                GUILayout.BeginVertical(SettingManager.BoxStyle);
+                foreach (var pair in oscSendPathInfoMap)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(pair.Key);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                    foreach (var infoText in pair.Value)
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.FlexibleSpace();
+                        GUILayout.Label(infoText);
+                        GUILayout.EndHorizontal();
+                    }
+                }
+                GUILayout.EndVertical();
+            }
+        }
+
+        [System.Serializable]
+        public class OscCallback
+        {
+            public string oscPath;
+            OscDelegate oscDelegate;
+            int invokeCount = 0;
+            bool showLatestData;
+
+            LinkedList<Capsule> latestOscList;
+
+            public OscCallback(string path, Object target, string method)
+            {
+                oscPath = path;
+                oscDelegate = (OscDelegate)OscDelegate.CreateDelegate(typeof(OscDelegate), target, method);
+                latestOscList = new LinkedList<Capsule>();
+            }
+            public OscCallback(string path, OscDelegate method)
+            {
+                oscPath = path;
+                oscDelegate = method;
+                latestOscList = new LinkedList<Capsule>();
+            }
+            public void Invoke(Capsule c)
+            {
+                oscDelegate(c.message.data);
+                invokeCount++;
+                latestOscList.AddLast(c);
+                while (10 < latestOscList.Count)
+                    latestOscList.RemoveFirst();
+            }
+            public void ShowInfoGUI()
+            {
+                GUILayout.BeginHorizontal();
+                showLatestData = GUILayout.Toggle(showLatestData, oscPath);
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(string.Format("{0}.{1}", oscDelegate.Target.ToString(), oscDelegate.Method.ToString()));
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(invokeCount.ToString());
+                GUILayout.EndHorizontal();
+
+                if (!showLatestData) return;
+                foreach (var c in latestOscList)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label(string.Format("{0}:{1}", c.ip.ToString(), c.message.ToString()));
+                    GUILayout.EndHorizontal();
+                }
+            }
         }
 
         [System.Serializable]
@@ -187,9 +325,17 @@ namespace sugi.cc
             {
                 base.OnGUIFunc();
                 GUI.contentColor = Color.red;
-                GUILayout.Label("neet restart to apply setting!!");
+                GUILayout.Label("need restart to apply setting!!");
                 GUI.contentColor = Color.white;
             }
+        }
+    }
+    public class OscAttribute : System.Attribute
+    {
+        public string oscPath;
+        public OscAttribute(string path)
+        {
+            oscPath = path;
         }
     }
 }
