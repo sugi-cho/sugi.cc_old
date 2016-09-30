@@ -1,35 +1,46 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Events;
 using System.Collections;
 
 namespace sugi.cc
 {
     public class ReconnectableNetworkManager : NetworkManager
     {
-        public bool isServer;
-        public bool isClient;
+
+        [SerializeField]
+        Setting setting;
+        [SerializeField]
+        string settingFilePath = "Networking/setting.json";
+        [SerializeField]
+        string[] networkPrefabResourcePathes = new[] { "Networking/Prefabs" };
+        public UnityEvent onStartServer;
+        public UnityEvent onClientConnect;
 
         void Start()
         {
-            Invoke("Connect", 1f);
+            SettingManager.AddSettingMenu(setting, settingFilePath);
+            this.Invoke(Connect, 1f);
 
         }
+
         public void Connect()
         {
             if (isNetworkActive)
                 return;
-            if (isServer)
+            if (setting.isServer)
             {
-                if (isClient)
+                if (setting.isClient)
                     StartHost();
                 else
                     StartServer();
             }
-            else if (isClient)
+            else if (setting.isClient)
                 StartClient();
             else
-                Invoke("Connect", 1f);
+                this.Invoke(Connect, 1f);
         }
+
         public override void OnClientSceneChanged(NetworkConnection conn)
         {
             base.OnClientSceneChanged(conn);
@@ -40,14 +51,93 @@ namespace sugi.cc
         public override void OnClientError(NetworkConnection conn, int errorCode)
         {
             Debug.LogFormat("error code {0}", errorCode);
-            Invoke("Connect", 1f);
+            this.Invoke(Connect, 1f);
             base.OnClientError(conn, errorCode);
         }
         public override void OnClientDisconnect(NetworkConnection conn)
         {
             Debug.Log("disconnected");
-            Invoke("Connect", 1f);
+            this.Invoke(Connect, 1f);
             base.OnClientDisconnect(conn);
+        }
+
+
+        public override void OnClientConnect(NetworkConnection conn)
+        {
+            base.OnClientConnect(conn);
+            onClientConnect.Invoke();
+            foreach (var networkPrefabResourcePath in networkPrefabResourcePathes)
+            {
+                var netPrefabs = Resources.LoadAll<NetworkIdentity>(networkPrefabResourcePath);
+                foreach (var netPrefab in netPrefabs)
+                    ClientScene.RegisterPrefab(netPrefab.gameObject);
+            }
+        }
+        public override void OnStartServer()
+        {
+            onStartServer.Invoke();
+        }
+
+        [System.Serializable]
+        public class Setting : SettingManager.Setting
+        {
+            public bool isServer;
+            public bool isClient;
+
+            public string networkAddress = "localhost";
+            public int networkPort = 7777;
+
+            protected override void OnLoad()
+            {
+                base.OnLoad();
+                singleton.networkAddress = networkAddress;
+                singleton.networkPort = networkPort;
+            }
+            public override void OnGUIFunc()
+            {
+                var s = NetworkServer.active;
+                var c = NetworkClient.active;
+                base.OnGUIFunc();
+
+                var noConnection = (singleton.client == null || singleton.client.connection == null || singleton.client.connection.connectionId == -1);
+
+                if (!singleton.IsClientConnected() && !NetworkServer.active && singleton.matchMaker == null)
+                {
+                    if (noConnection)
+                    {
+                        if (GUILayout.Button("LAN Host"))
+                            singleton.StartHost();
+                        if (GUILayout.Button("LAN Client"))
+                            singleton.StartClient();
+                        if (GUILayout.Button("LAN Server Only"))
+                            singleton.StartServer();
+                    }
+                    else
+                    {
+                        GUILayout.Label("Connecting to " + singleton.networkAddress + ":" + singleton.networkPort + "..");
+                        if (GUILayout.Button("Cancel Connection Attempt"))
+                            singleton.StopClient();
+                    }
+                }
+                else
+                {
+                    if (NetworkServer.active)
+                        GUILayout.Label("Server: port=" + singleton.networkPort);
+                    if (NetworkClient.active)
+                        GUILayout.Label("Client: address=" + singleton.networkAddress + " port=" + singleton.networkPort);
+                }
+
+                if (NetworkServer.active || NetworkClient.active)
+                    if (GUILayout.Button("Stop"))
+                        singleton.StopHost();
+            }
+
+            protected override void OnClose()
+            {
+                base.OnClose();
+                singleton.networkAddress = networkAddress;
+                singleton.networkPort = networkPort;
+            }
         }
     }
 }

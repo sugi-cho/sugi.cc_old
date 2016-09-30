@@ -18,6 +18,8 @@ namespace sugi.cc
 
         public bool dontDestroyOnLoad;
         public PathEventPair[] oscEvents;
+        [SerializeField]
+        string settingFilePath = "OscControll/setting.json";
 
         Dictionary<string, UnityAction<Capsule>> oscActionMap;
         Dictionary<string, LinkedList<string>> oscSendPathInfoMap;
@@ -83,7 +85,7 @@ namespace sugi.cc
                 defaultRemotePort = this.defaultRemotePort,
                 limitReceiveBiuffer = this.limitReceiveBuffer
             };
-            SettingManager.AddSettingMenu(setting, "OscControll/setting.json");
+            SettingManager.AddSettingMenu(setting, settingFilePath);
             SettingManager.AddExtraGuiFunc(ShowReceivedOscOnGUI);
             foreach (var oscEvent in oscEvents)
             {
@@ -119,6 +121,30 @@ namespace sugi.cc
             }
 
         }
+        void ResetDefaultRemot()
+        {
+            _defaultRemote = new IPEndPoint(FindFromHostName(defaultRemoteHost), defaultRemotePort);
+        }
+        void ResetOscServer()
+        {
+            if (_udp != null)
+                _udp.Close();
+            if (_reader != null)
+                _reader.Abort();
+            try
+            {
+                _udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                _udp.Bind(new IPEndPoint(IPAddress.Any, localPort));
+                _reader = new Thread(Reader);
+                _reader.Start();
+            }
+            catch (System.Exception e)
+            {
+                RaiseError(e);
+                enabled = false;
+            }
+        }
+
         protected override void OnDisable()
         {
             if (_udp != null)
@@ -225,33 +251,39 @@ namespace sugi.cc
 
         void ShowReceivedOscOnGUI()
         {
-            showReserve = GUILayout.Toggle(showReserve, "show reserved osc info?");
-            if (showReserve)
+            if (OscCallbackList != null && 0 < OscCallbackList.Count)
             {
-                GUILayout.BeginVertical(SettingManager.BoxStyle);
-                foreach (var callback in OscCallbackList)
-                    callback.ShowInfoGUI();
-                GUILayout.EndVertical();
-            }
-            showSend = GUILayout.Toggle(showSend, "show send osc info?");
-            if (showSend)
-            {
-                GUILayout.BeginVertical(SettingManager.BoxStyle);
-                foreach (var pair in oscSendPathInfoMap)
+                showReserve = GUILayout.Toggle(showReserve, "show reserved osc info?");
+                if (showReserve)
                 {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label(pair.Key);
-                    GUILayout.FlexibleSpace();
-                    GUILayout.EndHorizontal();
-                    foreach (var infoText in pair.Value)
+                    GUILayout.BeginVertical(SettingManager.BoxStyle);
+                    foreach (var callback in OscCallbackList)
+                        callback.ShowInfoGUI();
+                    GUILayout.EndVertical();
+                }
+            }
+            if (oscSendPathInfoMap != null && 0 < oscSendPathInfoMap.Count)
+            {
+                showSend = GUILayout.Toggle(showSend, "show send osc info?");
+                if (showSend)
+                {
+                    GUILayout.BeginVertical(SettingManager.BoxStyle);
+                    foreach (var pair in oscSendPathInfoMap)
                     {
                         GUILayout.BeginHorizontal();
+                        GUILayout.Label(pair.Key);
                         GUILayout.FlexibleSpace();
-                        GUILayout.Label(infoText);
                         GUILayout.EndHorizontal();
+                        foreach (var infoText in pair.Value)
+                        {
+                            GUILayout.BeginHorizontal();
+                            GUILayout.FlexibleSpace();
+                            GUILayout.Label(infoText);
+                            GUILayout.EndHorizontal();
+                        }
                     }
+                    GUILayout.EndVertical();
                 }
-                GUILayout.EndVertical();
             }
         }
 
@@ -321,12 +353,20 @@ namespace sugi.cc
                 Instance.defaultRemotePort = defaultRemotePort;
                 Instance.limitReceiveBuffer = limitReceiveBiuffer;
             }
-            public override void OnGUIFunc()
+            protected override void OnClose()
             {
-                base.OnGUIFunc();
-                GUI.contentColor = Color.red;
-                GUILayout.Label("need restart to apply setting!!");
-                GUI.contentColor = Color.white;
+                base.OnClose();
+                if (defaultRemoteHost != Instance.defaultRemoteHost || defaultRemotePort != Instance.defaultRemotePort)
+                {
+                    Instance.defaultRemoteHost = defaultRemoteHost;
+                    Instance.defaultRemotePort = defaultRemotePort;
+                    Instance.ResetDefaultRemot();
+                }
+                if (localPort != Instance.localPort)
+                {
+                    Instance.localPort = localPort;
+                    Instance.ResetOscServer();
+                }
             }
         }
     }
