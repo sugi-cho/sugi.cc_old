@@ -61,10 +61,8 @@ namespace sugi.cc
         void Update()
         {
             if (Input.GetKeyDown(EditKey))
-            {
                 edit = !edit;
-                Cursor.visible = edit;
-            }
+            Cursor.visible = edit;
         }
 
         void OnGUI()
