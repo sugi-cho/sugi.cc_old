@@ -13,6 +13,7 @@ namespace sugi.cc
         Setting setting;
         [SerializeField]
         Texture texture;
+        public Texture testPattern;
         public void SetTexture(Texture tex) { if (texture == tex) return; texture = tex; Start(); }
 
         Projection[] projections;
@@ -100,7 +101,11 @@ namespace sugi.cc
             }
         }
 
-        void SetProjectionSetting() { }
+        void ShowTestPattern(bool show)
+        {
+            foreach (var projection in projections)
+                projection.texture = show ? testPattern : texture;
+        }
 
         [System.Serializable]
         public class Setting : SettingManager.Setting
@@ -121,6 +126,7 @@ namespace sugi.cc
             string[] quadYStrings;
 
             int editingQuadWarpIdx;
+            bool showTestPattern;
 
             public override void OnGUIFunc()
             {
@@ -134,6 +140,9 @@ namespace sugi.cc
                 FloatArrayField("blend vertical:", blendVerticalRanges, ref blendVStrings);
 
                 QuadWarpPropField();
+
+                showTestPattern = GUILayout.Toggle(showTestPattern, "show test pattern");
+                Instance.ShowTestPattern(showTestPattern);
             }
 
             void InitializeStringVals()
@@ -185,6 +194,7 @@ namespace sugi.cc
             {
                 base.OnClose();
                 Instance.BuildProjections();
+                showTestPattern = false;
             }
 
             float FloatField(string label, float val, ref string strVal)
