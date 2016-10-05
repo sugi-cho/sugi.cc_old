@@ -7,6 +7,19 @@ namespace sugi.cc
 {
     public class ReconnectableNetworkManager : NetworkManager
     {
+        public static ReconnectableNetworkManager Instance
+        {
+            get
+            {
+                if (_Instance == null) _Instance = FindObjectOfType<ReconnectableNetworkManager>();
+                if (_Instance == null) _Instance = new GameObject("NetworkManager").AddComponent<ReconnectableNetworkManager>();
+                return _Instance;
+            }
+        }
+        static ReconnectableNetworkManager _Instance;
+
+        [System.Serializable]
+        public class ConnectEvent : UnityEvent<NetworkConnection> { }
 
         [SerializeField]
         Setting setting;
@@ -16,6 +29,7 @@ namespace sugi.cc
         string[] networkPrefabResourcePathes = new[] { "Networking/Prefabs" };
         public UnityEvent onStartServer;
         public UnityEvent onClientConnect;
+        public ConnectEvent onServerConnect;
 
         void Start()
         {
@@ -64,17 +78,24 @@ namespace sugi.cc
 
         public override void OnClientConnect(NetworkConnection conn)
         {
-            base.OnClientConnect(conn);
-            onClientConnect.Invoke();
             foreach (var networkPrefabResourcePath in networkPrefabResourcePathes)
             {
                 var netPrefabs = Resources.LoadAll<NetworkIdentity>(networkPrefabResourcePath);
                 foreach (var netPrefab in netPrefabs)
                     ClientScene.RegisterPrefab(netPrefab.gameObject);
             }
+            NetworkMessageManager.RegistorHandlerToClient();
+            base.OnClientConnect(conn);
+            onClientConnect.Invoke();
+        }
+        public override void OnServerConnect(NetworkConnection conn)
+        {
+            base.OnServerConnect(conn);
+            onServerConnect.Invoke(conn);
         }
         public override void OnStartServer()
         {
+            NetworkMessageManager.RegistorHandlerToServer();
             onStartServer.Invoke();
         }
 
@@ -95,8 +116,6 @@ namespace sugi.cc
             }
             public override void OnGUIFunc()
             {
-                var s = NetworkServer.active;
-                var c = NetworkClient.active;
                 base.OnGUIFunc();
 
                 var noConnection = (singleton.client == null || singleton.client.connection == null || singleton.client.connection.connectionId == -1);

@@ -1,115 +1,105 @@
 ﻿using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace sugi.cc
 {
-    [System.Serializable]
-    public class NetworkMessageEvent : UnityEvent<NetworkMessage> { }
     public class NetworkMessageManager : MonoBehaviour
     {
-        public static NetworkMessageManager Instance
-        {
-            get
-            {
-                if (_Instance == null)
-                {
-                    _Instance = FindObjectOfType<NetworkMessageManager>();
-                    if (_Instance == null) _Instance = new GameObject("NetworkMessageManager").AddComponent<NetworkMessageManager>();
-                    DontDestroyOnLoad(_Instance);
-                }
-                return _Instance;
-            }
-        }
-        static NetworkMessageManager _Instance;
+        [System.Serializable]
+        public class NetworkMessageEvent : UnityEngine.Events.UnityEvent<NetworkMessage> { }
 
-        public NetworkMessageEvent onNetworkMessage;
-        Dictionary<short, NetworkMessageDelegate> handlerMap;
-
-        [SerializeField, Header("For Test")]
-        bool isTest;
-        [SerializeField]
-        NetworkIdentity testObj;
-
-
-        public void SendMessageToServer(NetworkMessageDelegate handler, MessageBase msg)
-        {
-            var client = NetworkManager.singleton.client;
-            var msgType = GetMsgType(handler);
-            client.Send(msgType, msg);
-        }
-
-
-        // Use this for initialization
+        #region MonoBehaviourFunc
+        public NetworkMessageEvent registeredHandlers;
         void Start()
         {
-            BuildHandlersFromUnityEvents();
-            RegistorHandlerToServer();
-            var reconnectableManager = FindObjectOfType<ReconnectableNetworkManager>();
-            if (reconnectableManager != null)
-                reconnectableManager.onClientConnect.AddListener(RegistorHandlersToClient);
-        }
-        void BuildHandlersFromUnityEvents()
-        {
-            handlerMap = Enumerable.Range(0, onNetworkMessage.GetPersistentEventCount())
-                .ToDictionary(
-                idx => (short)(MsgType.Highest + 1 + idx),
-                idx =>
-                {
-                    var target = onNetworkMessage.GetPersistentTarget(idx);
-                    var methodName = onNetworkMessage.GetPersistentMethodName(idx);
-                    var handler = (NetworkMessageDelegate)System.Delegate.CreateDelegate(typeof(NetworkMessageDelegate), target, methodName);
-                    return handler;
-                }
-            );
-        }
-        void RegistorHandlerToServer()
-        {
-            NetworkServer.ClearHandlers();
-            foreach (var pair in handlerMap)
-                if (!NetworkServer.handlers.ContainsKey(pair.Key))
-                    NetworkServer.RegisterHandler(pair.Key, pair.Value);
-        }
-        void RegistorHandlersToClient()
-        {
-            var client = NetworkManager.singleton.client;
-            foreach (var pair in handlerMap)
-                if (!client.handlers.ContainsKey(pair.Key))
-                    client.RegisterHandler(pair.Key, pair.Value);
-        }
-        #region sampleCode for SendNetworkMessage
-        public void SendSample(NetworkMessage netMessage)
-        {
-            var msg = netMessage.ReadMessage<MessageSample>();
-            Debug.Log(msg.sampleText);
-            if (testObj != null && NetworkServer.active)
+            var numHandlers = registeredHandlers.GetPersistentEventCount();
+            for (var i = 0; i < numHandlers; i++)
             {
-                var go = Instantiate<NetworkIdentity>(testObj).gameObject;
-                NetworkServer.Spawn(go);
-                Debug.Log("spawn");
+                var target = registeredHandlers.GetPersistentTarget(i);
+                var methodName = registeredHandlers.GetPersistentMethodName(i);
+                var handler = (NetworkMessageDelegate)System.Delegate.CreateDelegate(typeof(NetworkMessageDelegate), target, methodName);
+                AddHandler(handler);
             }
-        }
-        class MessageSample : MessageBase
-        {
-            public string sampleText;
         }
         #endregion
 
-        short GetMsgType(NetworkMessageDelegate handler)
+        static NetworkClient client { get { return NetworkManager.singleton.client; } }
+        static bool showInfo;
+
+        static string GetIdentifier(NetworkMessageDelegate handler) { return handler.Target.ToString() + handler.Method.Name; }
+
+        static List<NetworkMessageDelegate> handlerList;
+        static Dictionary<short, NetworkMessageDelegate> handlerMap;
+
+        public static void AddHandler(NetworkMessageDelegate handler)
         {
-            if (!handlerMap.ContainsValue(handler))
-                return -1;
-            var msgType = handlerMap.Where(pair => pair.Value == handler).First().Key;
-            return msgType;
+            if (handlerList == null) handlerList = new List<NetworkMessageDelegate>();
+            if (!handlerList.Contains(handler)) handlerList.Add(handler);
         }
 
-        // Update is called once per frame
-        void Update()
+        public static void RegistorHandlerToServer()
         {
-            if (Input.GetMouseButtonDown(0) && isTest)
-                SendMessageToServer(SendSample, new MessageSample() { sampleText = "this is client" });
+            if (handlerList == null) return;
+            var msgType = MsgType.Highest;
+            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => msgType++, b => b);
+            foreach (var pair in handlerMap)
+            {
+                NetworkMessageDelegate handler = (NetworkMessage netMsg) =>
+                {
+                    pair.Value(netMsg);
+                };
+                NetworkServer.RegisterHandler(pair.Key, handler);
+            }
+            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+        }
+        public static void RegistorHandlerToClient()
+        {
+            if (handlerList == null) return;
+            var msgType = MsgType.Highest;
+            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => msgType++, b => b);
+            foreach (var pair in handlerMap)
+            {
+                NetworkMessageDelegate handler = (NetworkMessage netMsg) => { pair.Value(netMsg); };
+                client.RegisterHandler(pair.Key, handler);
+            }
+            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+        }
+
+        public static void SendNetworkMessage(NetworkMessageDelegate handler, MessageBase message)
+        {
+            SendNetworkMessage(client.connection, handler, message);
+        }
+
+        public static void SendNetworkMessage(NetworkConnection conn, NetworkMessageDelegate handler, MessageBase message)
+        {
+            var msgType = handlerMap.Where(b => b.Value == handler).FirstOrDefault().Key;
+            conn.Send(msgType, message);
+        }
+
+        public static void SendNetworkMessageToAll(NetworkMessageDelegate handler, MessageBase message)
+        {
+            var msgType = handlerMap.Where(b => b.Value == handler).FirstOrDefault().Key;
+            NetworkServer.SendToAll(msgType, message);
+        }
+
+        static void ShowNetworkMessageInfo()
+        {
+            GUILayout.BeginVertical(SettingManager.BoxStyle);
+            showInfo = GUILayout.Toggle(showInfo, "show registered NetworkMessage Info?");
+            if (showInfo)
+            {
+                foreach (var pair in handlerMap)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(pair.Key.ToString("000") + ":");
+                    GUILayout.Label(GetIdentifier(pair.Value));
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                }
+            }
+            GUILayout.EndVertical();
         }
     }
 }

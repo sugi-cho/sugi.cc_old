@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using System;
 using System.Linq;
 using DataUI;
 
@@ -18,7 +17,11 @@ namespace sugi.cc
                 Instance.settings = Instance.settings.OrderBy(b => b.filePath).ToList();
             }
         }
-        public static void AddExtraGuiFunc(Action func) { Instance.extraGuiFunc += func; }
+        public static void AddExtraGuiFunc(System.Action func)
+        {
+
+            Instance.extraGuiFunc += func;
+        }
 
         public static GUIStyle BoxStyle { get { return Instance.boxStyle; } }
 
@@ -43,9 +46,9 @@ namespace sugi.cc
         List<Setting> settings = new List<Setting>();
         Setting currentSetting;
         bool edit;
-        Rect windowRect = Rect.MinMaxRect(0, 0, Math.Min(Screen.width, 1024f), Math.Min(Screen.height, 768f));
+        Rect windowRect = Rect.MinMaxRect(0, 0, Mathf.Min(Screen.width, 1024f), Mathf.Min(Screen.height, 768f));
         Vector2 scroll;
-        Action extraGuiFunc;
+        System.Action extraGuiFunc;
 
         GUIStyle boxStyle { get { if (_style == null) { _style = new GUIStyle("box"); } return _style; } }
         [SerializeField]
