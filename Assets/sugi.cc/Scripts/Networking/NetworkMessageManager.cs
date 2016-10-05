@@ -26,6 +26,7 @@ namespace sugi.cc
         #endregion
 
         static NetworkClient client { get { return NetworkManager.singleton.client; } }
+        static bool delegateAdded;
         static bool showInfo;
 
         static string GetIdentifier(NetworkMessageDelegate handler) { return handler.Target.ToString() + handler.Method.Name; }
@@ -52,7 +53,9 @@ namespace sugi.cc
                 };
                 NetworkServer.RegisterHandler(pair.Key, handler);
             }
-            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+            if (!delegateAdded)
+                SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+            delegateAdded = true;
         }
         public static void RegistorHandlerToClient()
         {
@@ -64,7 +67,9 @@ namespace sugi.cc
                 NetworkMessageDelegate handler = (NetworkMessage netMsg) => { pair.Value(netMsg); };
                 client.RegisterHandler(pair.Key, handler);
             }
-            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+            if (!delegateAdded)
+                SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
+            delegateAdded = true;
         }
 
         public static void SendNetworkMessage(NetworkMessageDelegate handler, MessageBase message)
