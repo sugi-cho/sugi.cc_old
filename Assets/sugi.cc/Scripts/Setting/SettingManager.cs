@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.Linq;
 using DataUI;
@@ -19,8 +20,11 @@ namespace sugi.cc
         }
         public static void AddExtraGuiFunc(System.Action func)
         {
-
-            Instance.extraGuiFunc += func;
+            if (!Instance.extraGuiFuncList.Contains(func))
+            {
+                Instance.extraGuiFunc += func;
+                Instance.extraGuiFuncList.Add(func);
+            }
         }
 
         public static GUIStyle BoxStyle { get { return Instance.boxStyle; } }
@@ -49,6 +53,7 @@ namespace sugi.cc
         Rect windowRect = Rect.MinMaxRect(0, 0, Mathf.Min(Screen.width, 1024f), Mathf.Min(Screen.height, 768f));
         Vector2 scroll;
         System.Action extraGuiFunc;
+        List<System.Action> extraGuiFuncList = new List<System.Action>();
 
         GUIStyle boxStyle { get { if (_style == null) { _style = new GUIStyle("box"); } return _style; } }
         [SerializeField]
@@ -101,6 +106,9 @@ namespace sugi.cc
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Save and Close"))
                         setting.SaveAndClose();
+                    if (NetworkServer.active && setting.canSync)
+                        if (GUILayout.Button("Sync Setting"))
+                            setting.SyncSetting();
                     if (GUILayout.Button("Cancel"))
                         setting.CancelAndClose();
                     GUILayout.EndHorizontal();
@@ -134,12 +142,32 @@ namespace sugi.cc
             public string filePath { get; set; }
 
             public bool edit { get; set; }
+            public bool canSync
+            {
+                get { return _canSync; }
+                set { if (value) NetworkMessageManager.AddHandler(LoadSettingFromJson); _canSync = value; }
+            }
+            bool _canSync;
 
+            //use this Function as intisialize.
             public void LoadSettingFromFile(string path)
             {
                 filePath = path;
                 Helper.LoadJsonFile(this, filePath);
                 OnLoad();
+            }
+
+            public void LoadSettingFromJson(string json)
+            {
+                JsonUtility.FromJsonOverwrite(json, this);
+                dataEditor.Load();
+                Save();//save to json
+                OnLoad();//re initializing
+            }
+            void LoadSettingFromJson(NetworkMessage netMsg)
+            {
+                var msg = netMsg.ReadMessage<StringMessage>();
+                LoadSettingFromJson(msg.value);
             }
 
             public void Save()
@@ -152,6 +180,13 @@ namespace sugi.cc
                 Save();
                 edit = false;
                 OnClose();
+            }
+
+            public void SyncSetting()
+            {
+                var json = JsonUtility.ToJson(this);
+                if (NetworkServer.active)
+                    NetworkMessageManager.SendNetworkMessageToAll(LoadSettingFromJson, new StringMessage() { value = json });
             }
 
             public void CancelAndClose()

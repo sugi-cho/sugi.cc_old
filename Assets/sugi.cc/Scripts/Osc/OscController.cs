@@ -173,6 +173,10 @@ namespace sugi.cc
                 }
         }
 
+        public new void Send(MessageEncoder oscMessage)
+        {
+            Send(oscMessage, _defaultRemote);
+        }
         public new void Send(MessageEncoder oscMessage, IPEndPoint remote)
         {
             Send(oscMessage.Encode(), remote);

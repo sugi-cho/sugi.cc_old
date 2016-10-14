@@ -5,6 +5,10 @@ using System.Linq;
 
 namespace sugi.cc
 {
+    public class EmptyMessage : UnityEngine.Networking.NetworkSystem.EmptyMessage { }
+    public class FloatMessage : MessageBase { public float value; }
+    public class IntegerMessage : UnityEngine.Networking.NetworkSystem.IntegerMessage { }
+    public class StringMessage : UnityEngine.Networking.NetworkSystem.StringMessage { }
     public class NetworkMessageManager : MonoBehaviour
     {
         [System.Serializable]
@@ -26,7 +30,6 @@ namespace sugi.cc
         #endregion
 
         static NetworkClient client { get { return NetworkManager.singleton.client; } }
-        static bool delegateAdded;
         static bool showInfo;
 
         static string GetIdentifier(NetworkMessageDelegate handler) { return handler.Target.ToString() + handler.Method.Name; }
@@ -44,32 +47,23 @@ namespace sugi.cc
         {
             if (handlerList == null) return;
             var msgType = MsgType.Highest;
-            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => msgType++, b => b);
+            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => ++msgType, b => b);
             foreach (var pair in handlerMap)
             {
-                NetworkMessageDelegate handler = (NetworkMessage netMsg) =>
-                {
-                    pair.Value(netMsg);
-                };
-                NetworkServer.RegisterHandler(pair.Key, handler);
+                NetworkServer.RegisterHandler(pair.Key, pair.Value);
             }
-            if (!delegateAdded)
-                SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
-            delegateAdded = true;
+            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
         }
         public static void RegistorHandlerToClient()
         {
             if (handlerList == null) return;
             var msgType = MsgType.Highest;
-            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => msgType++, b => b);
+            handlerMap = handlerList.OrderBy(handler => GetIdentifier(handler)).ToDictionary(b => ++msgType, b => b);
             foreach (var pair in handlerMap)
             {
-                NetworkMessageDelegate handler = (NetworkMessage netMsg) => { pair.Value(netMsg); };
-                client.RegisterHandler(pair.Key, handler);
+                client.RegisterHandler(pair.Key, pair.Value);
             }
-            if (!delegateAdded)
-                SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
-            delegateAdded = true;
+            SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
         }
 
         public static void SendNetworkMessage(NetworkMessageDelegate handler, MessageBase message)

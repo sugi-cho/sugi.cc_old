@@ -12,7 +12,6 @@ namespace sugi.cc
             get
             {
                 if (_Instance == null) _Instance = FindObjectOfType<ReconnectableNetworkManager>();
-                if (_Instance == null) _Instance = new GameObject("NetworkManager").AddComponent<ReconnectableNetworkManager>();
                 return _Instance;
             }
         }
