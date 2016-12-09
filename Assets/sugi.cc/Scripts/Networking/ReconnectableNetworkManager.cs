@@ -27,14 +27,14 @@ namespace sugi.cc
         [SerializeField]
         string[] networkPrefabResourcePathes = new[] { "Networking/Prefabs" };
         public UnityEvent onStartServer;
-        public UnityEvent onClientConnect;
+        public ConnectEvent onClientConnect;
         public ConnectEvent onServerConnect;
+
 
         void Start()
         {
             SettingManager.AddSettingMenu(setting, settingFilePath);
             this.Invoke(Connect, 1f);
-
         }
 
         public void Connect()
@@ -77,6 +77,7 @@ namespace sugi.cc
 
         public override void OnClientConnect(NetworkConnection conn)
         {
+            base.OnClientConnect(conn);
             foreach (var networkPrefabResourcePath in networkPrefabResourcePathes)
             {
                 var netPrefabs = Resources.LoadAll<NetworkIdentity>(networkPrefabResourcePath);
@@ -84,17 +85,23 @@ namespace sugi.cc
                     ClientScene.RegisterPrefab(netPrefab.gameObject);
             }
             NetworkMessageManager.RegistorHandlerToClient();
-            base.OnClientConnect(conn);
-            onClientConnect.Invoke();
+            if (NetworkMessageManager.onClientConnect != null)
+                NetworkMessageManager.onClientConnect.Invoke(conn);
+            onClientConnect.Invoke(conn);
         }
         public override void OnServerConnect(NetworkConnection conn)
         {
             base.OnServerConnect(conn);
+            if (NetworkMessageManager.onServerConnect != null)
+                NetworkMessageManager.onServerConnect.Invoke(conn);
             onServerConnect.Invoke(conn);
         }
         public override void OnStartServer()
         {
+            base.OnStartServer();
             NetworkMessageManager.RegistorHandlerToServer();
+            if (NetworkMessageManager.onStartServer != null)
+                NetworkMessageManager.onStartServer.Invoke();
             onStartServer.Invoke();
         }
 
@@ -106,6 +113,8 @@ namespace sugi.cc
 
             public string networkAddress = "localhost";
             public int networkPort = 7777;
+
+            bool showConnections;
 
             protected override void OnLoad()
             {
@@ -148,6 +157,47 @@ namespace sugi.cc
                 if (NetworkServer.active || NetworkClient.active)
                     if (GUILayout.Button("Stop"))
                         singleton.StopHost();
+
+                if (NetworkServer.active)
+                {
+                    GUILayout.BeginVertical("box");
+                    if (showConnections = GUILayout.Toggle(showConnections, "show connections"))
+                    {
+                        foreach (var conn in NetworkServer.connections)
+                        {
+                            if (conn == null)
+                            {
+                                var tmp = GUI.contentColor;
+                                GUI.contentColor = Color.red;
+                                GUILayout.Label(string.Format("connection.#{0} is null", NetworkServer.connections.IndexOf(conn).ToString("00")));
+                                GUI.contentColor = tmp;
+                            }
+                            else
+                            {
+                                GUILayout.BeginHorizontal();
+                                GUILayout.Label("address:" + conn.address);
+                                GUILayout.Label("connection ID:" + conn.connectionId);
+                                GUILayout.Label("isConnected:" + conn.isConnected);
+                                GUILayout.EndHorizontal();
+                            }
+                        }
+                    }
+                    GUILayout.EndVertical();
+                }
+                else if (singleton.client != null && singleton.client.connection != null)
+                {
+                    GUILayout.BeginVertical("box");
+                    if (showConnections = GUILayout.Toggle(showConnections, "show connection"))
+                    {
+                        var conn = singleton.client.connection;
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label("address:" + conn.address);
+                        GUILayout.Label("connection ID:" + conn.connectionId);
+                        GUILayout.Label("isConnected:" + conn.isConnected);
+                        GUILayout.EndHorizontal();
+                    }
+                    GUILayout.EndVertical();
+                }
             }
 
             protected override void OnClose()

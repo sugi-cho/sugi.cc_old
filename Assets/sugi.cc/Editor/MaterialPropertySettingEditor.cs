@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace sugi.cc
 {
-    [CustomEditor(typeof(MaterialPropertySetting))]
+    [CanEditMultipleObjects, CustomEditor(typeof(MaterialPropertySetting))]
     public class MaterialPropertySettingEditor : Editor
     {
 

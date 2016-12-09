@@ -3,11 +3,16 @@ using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.Linq;
 using DataUI;
+using FileUtility;
 
 namespace sugi.cc
 {
     public class SettingManager : MonoBehaviour
     {
+
+        public static Material drawLineMat { get { if (_mat == null) _mat = new Material(Shader.Find("Particles/Alpha Blended")); return _mat; } }
+        static Material _mat;
+
         public static void AddSettingMenu(Setting setting, string filePath)
         {
             setting.LoadSettingFromFile(filePath);
@@ -17,6 +22,7 @@ namespace sugi.cc
                 Instance.settings.Add(setting);
                 Instance.settings = Instance.settings.OrderBy(b => b.filePath).ToList();
             }
+            Instance.BuildSettingTree();
         }
         public static void AddExtraGuiFunc(System.Action func)
         {
@@ -27,7 +33,6 @@ namespace sugi.cc
             }
         }
 
-        public static GUIStyle BoxStyle { get { return Instance.boxStyle; } }
 
         #region instance
 
@@ -46,6 +51,7 @@ namespace sugi.cc
         #endregion
 
         public static KeyCode EditKey = KeyCode.E;
+        List<SettingTreeNode> settingTree;
 
         List<Setting> settings = new List<Setting>();
         Setting currentSetting;
@@ -55,9 +61,6 @@ namespace sugi.cc
         System.Action extraGuiFunc;
         List<System.Action> extraGuiFuncList = new List<System.Action>();
 
-        GUIStyle boxStyle { get { if (_style == null) { _style = new GUIStyle("box"); } return _style; } }
-        [SerializeField]
-        GUIStyle _style;
 
         public void HideGUI()
         {
@@ -77,53 +80,121 @@ namespace sugi.cc
         {
             if (!edit)
                 return;
-            windowRect = GUI.Window(GetInstanceID(), windowRect, OnWindow, "Settings");
+            windowRect = GUI.Window(GetInstanceID(), windowRect, OnWindow, string.Format("Settings:({0})", Application.persistentDataPath));
+        }
+
+        void BuildSettingTree()
+        {
+            var splitedSettingPathList = settings.Select(b => new { paths = b.filePath.Split('/'), settig = b }).ToList();
+            var treeRootList = new List<SettingTreeNode>();
+            splitedSettingPathList.ForEach(pathSettings =>
+            {
+                var paths = pathSettings.paths;
+                var setting = pathSettings.settig;
+                var currentNodeList = treeRootList;
+                for (var i = 0; i < paths.Length; i++)
+                {
+                    var path = paths[i];
+                    var nextNodeList = IsContainsPath(currentNodeList, path);
+                    if (nextNodeList == null)
+                    {
+                        var newNode = new SettingTreeNode(path);
+                        if (path == paths.Last())
+                            newNode.setting = setting;
+                        else
+                            newNode.children = new List<SettingTreeNode>();
+                        currentNodeList.Add(newNode);
+                        nextNodeList = newNode.children;
+                    }
+                    currentNodeList = nextNodeList;
+                }
+            });
+            settingTree = treeRootList;
+        }
+        List<SettingTreeNode> IsContainsPath(List<SettingTreeNode> nodeList, string path)
+        {
+            var node = nodeList.Where(b => b.path == path).FirstOrDefault();
+            if (node == null)
+                return null;
+            else
+                return node.children;
+        }
+        class SettingTreeNode
+        {
+            public bool open;
+            public string path;
+            public List<SettingTreeNode> children;
+            public Setting setting;
+            public SettingTreeNode(string path) { this.path = path; }
         }
 
         void OnWindow(int id)
         {
             scroll = GUILayout.BeginScrollView(scroll);
-            settings.ForEach(setting =>
+
+            if (GUILayout.Button("open SettingFolder"))
+                OpenInFileBrowser.Open(Application.persistentDataPath);
+            GUILayout.Space(16f);
+            GUILayout.Label("Settings:");
+            settingTree.ForEach(node =>
             {
-                if (setting.edit)
-                {
-                    GUILayout.Space(16);
-
-                    GUILayout.BeginVertical(boxStyle);
-                    GUI.contentColor = Color.yellow;
-                    GUILayout.Label(setting.filePath);
-                    GUI.contentColor = Color.white;
-
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Space(16f);
-
-                    GUILayout.BeginVertical();
-                    setting.OnGUIFunc();
-                    GUILayout.EndVertical();
-
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Save and Close"))
-                        setting.SaveAndClose();
-                    if (NetworkServer.active && setting.canSync)
-                        if (GUILayout.Button("Sync Setting"))
-                            setting.SyncSetting();
-                    if (GUILayout.Button("Cancel"))
-                        setting.CancelAndClose();
-                    GUILayout.EndHorizontal();
-
-                    GUILayout.EndVertical();
-
-                    GUILayout.Space(16);
-                }
-                else if (GUILayout.Button(setting.filePath))
-                    setting.edit = true;
+                ShowSettingNodeGUI(node);
             });
+
+            GUI.contentColor = Color.white;
             if (extraGuiFunc != null)
+            {
+                GUILayout.Space(16);
                 extraGuiFunc.Invoke();
+            }
+
+
             GUILayout.EndScrollView();
             GUI.DragWindow();
+        }
+        void ShowSettingNodeGUI(SettingTreeNode node)
+        {
+            GUI.contentColor = Color.white;
+            GUILayout.BeginVertical("box");
+            if (node.setting != null)
+                ShowSettingGUI(node.setting, node.path);
+            else if (node.open = GUILayout.Toggle(node.open, node.path + "/"))
+            {
+                node.children.Where(b => b.setting == null).ToList().ForEach(child => { ShowSettingNodeGUI(child); });
+                GUILayout.Space(8);
+                node.children.Where(b => b.setting != null).ToList().ForEach(child => { ShowSettingNodeGUI(child); });
+            }
+            GUILayout.EndVertical();
+        }
+        void ShowSettingGUI(Setting setting, string path)
+        {
+            GUI.contentColor = Color.yellow;
+            if (setting.edit = GUILayout.Toggle(setting.edit, path))
+            {
+                GUILayout.Space(16);
+                GUI.contentColor = Color.white;
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(16f);
+
+                GUILayout.BeginVertical();
+                setting.OnGUIFunc();
+                GUILayout.EndVertical();
+
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Save and Close"))
+                    setting.SaveAndClose();
+                if (NetworkServer.active && setting.canSync)
+                    if (GUILayout.Button("Sync Setting"))
+                        setting.SyncSetting();
+                if (GUILayout.Button("Cancel"))
+                    setting.CancelAndClose();
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(16);
+            }
         }
 
         void OnRenderObject()
@@ -142,12 +213,15 @@ namespace sugi.cc
             public string filePath { get; set; }
 
             public bool edit { get; set; }
-            public bool canSync
+
+            public void SetSyncable()
             {
-                get { return _canSync; }
-                set { if (value) NetworkMessageManager.AddHandler(LoadSettingFromJson); _canSync = value; }
+                sync = true;
+                NetworkMessageManager.AddHandler(LoadSettingFromJson);
+                NetworkMessageManager.onServerConnect += SyncSettingToClient;
             }
-            bool _canSync;
+            bool sync;
+            public bool canSync { get { return sync; } }
 
             //use this Function as intisialize.
             public void LoadSettingFromFile(string path)
@@ -168,6 +242,11 @@ namespace sugi.cc
             {
                 var msg = netMsg.ReadMessage<StringMessage>();
                 LoadSettingFromJson(msg.value);
+            }
+            void SyncSettingToClient(NetworkConnection conn)
+            {
+                var json = JsonUtility.ToJson(this);
+                NetworkMessageManager.SendNetworkMessage(conn, LoadSettingFromJson, new StringMessage() { value = json });
             }
 
             public void Save()

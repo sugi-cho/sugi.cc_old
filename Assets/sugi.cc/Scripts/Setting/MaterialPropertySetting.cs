@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,15 +12,18 @@ namespace sugi.cc
 
     public class MaterialPropertySetting : MonoBehaviour
     {
-
+        [Header("sync materialProperties server to client")]
+        public bool sync;
         public Material[] targetMaterials;
-        string GetFilePath(string matName) { return "MaterialSettings/" + matName + ".json"; }
+        public string fileDirectryPath = "MaterialSettings/";
+        string GetFilePath(string matName) { return fileDirectryPath + matName + ".json"; }
 
         [SerializeField]
         Setting[] settings;
 #if UNITY_EDITOR
         public void SetPropertiesFromMaterial()
         {
+            targetMaterials = targetMaterials.OrderBy(tm => tm.name).ToArray();
             InitializeSettings();
             for (var i = 0; i < settings.Length; i++)
             {
@@ -31,7 +33,7 @@ namespace sugi.cc
                 var s = targetMat.shader;
                 var pCount = ShaderUtil.GetPropertyCount(s);
 
-                var fPropNames = Enumerable.Range(0, pCount).Where(idx => ShaderUtil.GetPropertyType(s, idx) == ShaderUtil.ShaderPropertyType.Float).Select(idx => ShaderUtil.GetPropertyName(s, idx)).ToArray();
+                var fPropNames = Enumerable.Range(0, pCount).Where(idx => ShaderUtil.GetPropertyType(s, idx) == ShaderUtil.ShaderPropertyType.Float || ShaderUtil.GetPropertyType(s, idx) == ShaderUtil.ShaderPropertyType.Range).Select(idx => ShaderUtil.GetPropertyName(s, idx)).ToArray();
                 var cPropNames = Enumerable.Range(0, pCount).Where(idx => ShaderUtil.GetPropertyType(s, idx) == ShaderUtil.ShaderPropertyType.Color).Select(idx => ShaderUtil.GetPropertyName(s, idx)).ToArray();
                 var vPropNames = Enumerable.Range(0, pCount).Where(idx => ShaderUtil.GetPropertyType(s, idx) == ShaderUtil.ShaderPropertyType.Vector).Select(idx => ShaderUtil.GetPropertyName(s, idx)).ToArray();
 
@@ -58,6 +60,7 @@ namespace sugi.cc
 #endif
         //property for use oscMessageEvent
         //use pass "/material/save"
+        [Osc("/material/save")]
         public void SaveSettings(object[] msgs = null)
         {
             foreach (var setting in settings)
@@ -162,6 +165,7 @@ namespace sugi.cc
                 var targetMat = targetMaterials[i];
                 setting.targetMat = targetMat;
                 SettingManager.AddSettingMenu(setting, GetFilePath(targetMat.name));
+                if (sync) setting.SetSyncable();
             }
 
         }
@@ -361,7 +365,7 @@ namespace sugi.cc
                 if (tex != null)
                 {
                     GUILayout.Label("Texture Name: " + tex.name);
-                    GUILayout.Label(tex, GUILayout.Height(Mathf.Min(tex.height, 480)));
+                    GUILayout.Label(tex, GUILayout.Width(Mathf.Min(tex.width, 640)), GUILayout.Height(Mathf.Min(tex.height, 480)));
                 }
                 else
                     GUILayout.Label("Texture Not Assigned");

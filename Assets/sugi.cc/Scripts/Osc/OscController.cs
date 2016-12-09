@@ -24,8 +24,7 @@ namespace sugi.cc
         Dictionary<string, UnityAction<Capsule>> oscActionMap;
         Dictionary<string, LinkedList<string>> oscSendPathInfoMap;
 
-        [SerializeField]
-        List<OscCallback> OscCallbackList;
+        Dictionary<string, List<OscCallback>> OscCallbackListMap;
         bool showReserve;
         bool showSend;
 
@@ -46,14 +45,14 @@ namespace sugi.cc
                      foreach (OscAttribute attr in b.attrs)
                      {
                          var path = attr.oscPath;
-                         var callback = new OscCallback(path, target, b.method.Name);
+                         var callback = new OscCallback(target, b.method.Name);
                          AddCallback(path, callback);
                      }
                  });
         }
         public void AddCallback(string path, OscDelegate oscDelegate)
         {
-            var oscCalllback = new OscCallback(path, oscDelegate);
+            var oscCalllback = new OscCallback(oscDelegate);
             AddCallback(path, oscCalllback);
 
         }
@@ -61,18 +60,21 @@ namespace sugi.cc
         {
             if (oscActionMap == null)
                 oscActionMap = new Dictionary<string, UnityAction<Capsule>>();
-            if (OscCallbackList == null)
-                OscCallbackList = new List<OscCallback>();
+            if (OscCallbackListMap == null)
+                OscCallbackListMap = new Dictionary<string, List<OscCallback>>();
 
             if (oscActionMap.ContainsKey(path))
                 oscActionMap[path] += callback.Invoke;
             else
                 oscActionMap[path] = callback.Invoke;
 
-            if (!OscCallbackList.Contains(callback))
+            if (OscCallbackListMap.ContainsKey(path))
+                OscCallbackListMap[path].Add(callback);
+            else
             {
-                OscCallbackList.Add(callback);
-                OscCallbackList = OscCallbackList.OrderBy(b => b.oscPath).ToList();
+                var callBackList = new List<OscCallback>();
+                callBackList.Add(callback);
+                OscCallbackListMap.Add(path, callBackList);
             }
         }
 
@@ -95,7 +97,7 @@ namespace sugi.cc
                 {
                     var target = onOsc.GetPersistentTarget(i);
                     var method = onOsc.GetPersistentMethodName(i);
-                    var callback = new OscCallback(path, target, method);
+                    var callback = new OscCallback(target, method);
                     AddCallback(path, callback);
                 }
             }
@@ -255,23 +257,35 @@ namespace sugi.cc
 
         void ShowReceivedOscOnGUI()
         {
-            if (OscCallbackList != null && 0 < OscCallbackList.Count)
+            if (OscCallbackListMap != null && 0 < OscCallbackListMap.Count)
             {
-                showReserve = GUILayout.Toggle(showReserve, "show reserved osc info?");
-                if (showReserve)
+                GUILayout.BeginVertical("box");
+                if (showReserve = GUILayout.Toggle(showReserve, "show reserved osc info?"))
                 {
-                    GUILayout.BeginVertical(SettingManager.BoxStyle);
-                    foreach (var callback in OscCallbackList)
-                        callback.ShowInfoGUI();
-                    GUILayout.EndVertical();
+                    foreach (var pair in OscCallbackListMap)
+                    {
+                        var path = pair.Key;
+                        var list = pair.Value;
+                        if (list[0].showLatestData = GUILayout.Toggle(list[0].showLatestData, path))
+                        {
+                            GUILayout.BeginHorizontal();
+                            GUILayout.Space(16);
+                            GUILayout.BeginVertical();
+                            foreach (var callback in list)
+                                GUILayout.Label(callback.GetMethodName());
+                            list[0].ShowLatestData();
+                            GUILayout.EndVertical();
+                            GUILayout.EndHorizontal();
+                        }
+                    }
                 }
+                GUILayout.EndVertical();
             }
             if (oscSendPathInfoMap != null && 0 < oscSendPathInfoMap.Count)
             {
-                showSend = GUILayout.Toggle(showSend, "show send osc info?");
-                if (showSend)
+                GUILayout.BeginVertical("box");
+                if (showSend = GUILayout.Toggle(showSend, "show send osc info?"))
                 {
-                    GUILayout.BeginVertical(SettingManager.BoxStyle);
                     foreach (var pair in oscSendPathInfoMap)
                     {
                         GUILayout.BeginHorizontal();
@@ -286,30 +300,26 @@ namespace sugi.cc
                             GUILayout.EndHorizontal();
                         }
                     }
-                    GUILayout.EndVertical();
                 }
+                GUILayout.EndVertical();
             }
         }
 
-        [System.Serializable]
         public class OscCallback
         {
-            public string oscPath;
             OscDelegate oscDelegate;
             int invokeCount = 0;
-            bool showLatestData;
+            public bool showLatestData;
 
             LinkedList<Capsule> latestOscList;
 
-            public OscCallback(string path, Object target, string method)
+            public OscCallback(Object target, string method)
             {
-                oscPath = path;
                 oscDelegate = (OscDelegate)OscDelegate.CreateDelegate(typeof(OscDelegate), target, method);
                 latestOscList = new LinkedList<Capsule>();
             }
-            public OscCallback(string path, OscDelegate method)
+            public OscCallback(OscDelegate method)
             {
-                oscPath = path;
                 oscDelegate = method;
                 latestOscList = new LinkedList<Capsule>();
             }
@@ -321,24 +331,19 @@ namespace sugi.cc
                 while (10 < latestOscList.Count)
                     latestOscList.RemoveFirst();
             }
-            public void ShowInfoGUI()
+            public string GetMethodName()
+            {
+                return string.Format("{0}.{1}", oscDelegate.Target.ToString(), oscDelegate.Method.ToString());
+            }
+            public void ShowLatestData()
             {
                 GUILayout.BeginHorizontal();
-                showLatestData = GUILayout.Toggle(showLatestData, oscPath);
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(string.Format("{0}.{1}", oscDelegate.Target.ToString(), oscDelegate.Method.ToString()));
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(invokeCount.ToString());
-                GUILayout.EndHorizontal();
-
-                if (!showLatestData) return;
+                GUILayout.BeginVertical();
                 foreach (var c in latestOscList)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.FlexibleSpace();
                     GUILayout.Label(string.Format("{0}:{1}", c.ip.ToString(), c.message.ToString()));
-                    GUILayout.EndHorizontal();
-                }
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
             }
         }
 

@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace sugi.cc
 {
-    static class Extensions
+    public static class Extensions
     {
         #region MaterialPropertyBlock mpBlock
 
@@ -29,6 +29,12 @@ namespace sugi.cc
         {
             behaviour.InvokeRepeating(method.Method.Name, time, repeatRate);
         }
+
+        public static void CancelInvoke(this MonoBehaviour behaviour, System.Action method)
+        {
+            behaviour.CancelInvoke(method.Method.Name);
+        }
+
         #region call method with delay by using coroutine
         static IEnumerator DelayMethodCoroutine(float waitTime, System.Action method)
         {
@@ -85,6 +91,23 @@ namespace sugi.cc
         {
             if (mat != null)
                 mat.SetPass(pass);
+            GL.Begin(GL.QUADS);
+            GL.Vertex3(-1.0f, -1.0f, z);
+            GL.Vertex3(1.0f, -1.0f, z);
+            GL.Vertex3(1.0f, 1.0f, z);
+            GL.Vertex3(-1.0f, 1.0f, z);
+
+            GL.Vertex3(-1.0f, 1.0f, z);
+            GL.Vertex3(1.0f, 1.0f, z);
+            GL.Vertex3(1.0f, -1.0f, z);
+            GL.Vertex3(-1.0f, -1.0f, z);
+            GL.End();
+        }
+        public static void DrawFullscreenQuad(this Material mat, Color col, int pass = 0, float z = 1.0f)
+        {
+            if (mat != null)
+                mat.SetPass(pass);
+            GL.Color(col);
             GL.Begin(GL.QUADS);
             GL.Vertex3(-1.0f, -1.0f, z);
             GL.Vertex3(1.0f, -1.0f, z);
@@ -195,5 +218,12 @@ namespace sugi.cc
             return new Vector2(x, y);
         }
 
+        public static Vector3 GetRandomPoint(this Bounds bounds)
+        {
+            var x = Random.Range(-bounds.extents.x, bounds.extents.x);
+            var y = Random.Range(-bounds.extents.y, bounds.extents.y);
+            var z = Random.Range(-bounds.extents.z, bounds.extents.z);
+            return bounds.center + new Vector3(x, y, z);
+        }
     }
 }

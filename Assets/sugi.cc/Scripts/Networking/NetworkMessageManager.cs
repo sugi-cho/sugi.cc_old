@@ -9,8 +9,15 @@ namespace sugi.cc
     public class FloatMessage : MessageBase { public float value; }
     public class IntegerMessage : UnityEngine.Networking.NetworkSystem.IntegerMessage { }
     public class StringMessage : UnityEngine.Networking.NetworkSystem.StringMessage { }
+    public class Vector3Message : MessageBase { public Vector3 value; }
+    public class BoolMessage : MessageBase { public bool value; }
+
+    /// <summary>
+    /// use ReconnectableNetworkManager to Enable "onServerConnect", "onClientConnect" and "onStartServer" delegate.
+    /// </summary>
     public class NetworkMessageManager : MonoBehaviour
     {
+        public delegate void OnConnect(NetworkConnection conn);
         [System.Serializable]
         public class NetworkMessageEvent : UnityEngine.Events.UnityEvent<NetworkMessage> { }
 
@@ -28,6 +35,10 @@ namespace sugi.cc
             }
         }
         #endregion
+
+        public static OnConnect onServerConnect { get; set; }
+        public static OnConnect onClientConnect { get; set; }
+        public static System.Action onStartServer { get; set; }
 
         static NetworkClient client { get { return NetworkManager.singleton.client; } }
         static bool showInfo;
@@ -85,7 +96,7 @@ namespace sugi.cc
 
         static void ShowNetworkMessageInfo()
         {
-            GUILayout.BeginVertical(SettingManager.BoxStyle);
+            GUILayout.BeginVertical("box");
             showInfo = GUILayout.Toggle(showInfo, "show registered NetworkMessage Info?");
             if (showInfo)
             {

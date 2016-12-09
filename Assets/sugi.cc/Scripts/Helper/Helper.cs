@@ -7,12 +7,11 @@ using System.Runtime.InteropServices;
 
 namespace sugi.cc
 {
-    static class Helper
+    public static class Helper
     {
-
         public static void LoadJsonFile<T>(T overwriteTarget, string filePath = "appData.json")
         {
-            var path = Path.Combine(Application.streamingAssetsPath, filePath);
+            var path = Path.Combine(Application.persistentDataPath, filePath);
             if (File.Exists(path))
                 JsonUtility.FromJsonOverwrite(File.ReadAllText(path), overwriteTarget);
             else
@@ -22,7 +21,7 @@ namespace sugi.cc
         public static void SaveJsonFile<T>(T obj, string filePath = "appData.json")
         {
             var json = JsonUtility.ToJson(obj);
-            var path = Path.Combine(Application.streamingAssetsPath, filePath);
+            var path = Path.Combine(Application.persistentDataPath, filePath);
             var dPath = Path.GetDirectoryName(path);
             if (!Directory.Exists(dPath))
                 Directory.CreateDirectory(dPath);
@@ -135,14 +134,14 @@ namespace sugi.cc
         }
         public static Mesh GetPrimitiveMesh(PrimitiveType type)
         {
-            if (primitiveMeshList.ContainsKey(type))
-                return primitiveMeshList[type];
+            if (primitiveMeshMap.ContainsKey(type))
+                return primitiveMeshMap[type];
             var go = GameObject.CreatePrimitive(type);
-            primitiveMeshList.Add(type, go.GetComponent<MeshFilter>().sharedMesh);
+            primitiveMeshMap.Add(type, go.GetComponent<MeshFilter>().sharedMesh);
             Object.Destroy(go);
-            return primitiveMeshList[type];
+            return primitiveMeshMap[type];
         }
-        static Dictionary<PrimitiveType, Mesh> primitiveMeshList = new Dictionary<PrimitiveType, Mesh>();
+        static Dictionary<PrimitiveType, Mesh> primitiveMeshMap = new Dictionary<PrimitiveType, Mesh>();
 
     }
 
