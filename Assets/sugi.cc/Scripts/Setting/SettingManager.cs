@@ -5,6 +5,8 @@ using System.Linq;
 using DataUI;
 using FileUtility;
 
+using NetSystem = UnityEngine.Networking.NetworkSystem;
+
 namespace sugi.cc
 {
     public class SettingManager : MonoBehaviour
@@ -240,13 +242,13 @@ namespace sugi.cc
             }
             void LoadSettingFromJson(NetworkMessage netMsg)
             {
-                var msg = netMsg.ReadMessage<StringMessage>();
+                var msg = netMsg.ReadMessage<NetSystem.StringMessage>();
                 LoadSettingFromJson(msg.value);
             }
             void SyncSettingToClient(NetworkConnection conn)
             {
                 var json = JsonUtility.ToJson(this);
-                NetworkMessageManager.SendNetworkMessage(conn, LoadSettingFromJson, new StringMessage() { value = json });
+                NetworkMessageManager.SendNetworkMessage(conn, LoadSettingFromJson, NetworkMessageManager.GetStringMessage(json));
             }
 
             public void Save()
@@ -265,7 +267,7 @@ namespace sugi.cc
             {
                 var json = JsonUtility.ToJson(this);
                 if (NetworkServer.active)
-                    NetworkMessageManager.SendNetworkMessageToAll(LoadSettingFromJson, new StringMessage() { value = json });
+                    NetworkMessageManager.SendNetworkMessageToAll(LoadSettingFromJson, NetworkMessageManager.GetStringMessage(json));
             }
 
             public void CancelAndClose()

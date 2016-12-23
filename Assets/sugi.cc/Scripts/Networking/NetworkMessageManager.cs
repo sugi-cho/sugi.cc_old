@@ -3,20 +3,36 @@ using UnityEngine.Networking;
 using System.Collections.Generic;
 using System.Linq;
 
+using NetSystem = UnityEngine.Networking.NetworkSystem;
+
 namespace sugi.cc
 {
-    public class EmptyMessage : UnityEngine.Networking.NetworkSystem.EmptyMessage { }
-    public class FloatMessage : MessageBase { public float value; }
-    public class IntegerMessage : UnityEngine.Networking.NetworkSystem.IntegerMessage { }
-    public class StringMessage : UnityEngine.Networking.NetworkSystem.StringMessage { }
-    public class Vector3Message : MessageBase { public Vector3 value; }
-    public class BoolMessage : MessageBase { public bool value; }
-
     /// <summary>
     /// use ReconnectableNetworkManager to Enable "onServerConnect", "onClientConnect" and "onStartServer" delegate.
     /// </summary>
     public class NetworkMessageManager : MonoBehaviour
     {
+        public static NetSystem.EmptyMessage GetEmptyMessage() { if (_emptyMessage == null) _emptyMessage = new NetSystem.EmptyMessage(); return _emptyMessage; }
+        static NetSystem.EmptyMessage _emptyMessage;
+
+        public static NetSystem.IntegerMessage GetIntegerMessage(int value) { if (_integerMessage == null) _integerMessage = new NetSystem.IntegerMessage(); _integerMessage.value = value; return _integerMessage; }
+        static NetSystem.IntegerMessage _integerMessage;
+
+        public static NetSystem.StringMessage GetStringMessage(string value) { if (_stringMessage == null) _stringMessage = new NetSystem.StringMessage(); _stringMessage.value = value; return _stringMessage; }
+        static NetSystem.StringMessage _stringMessage;
+
+        public class FloatMessage : MessageBase { public float value; }
+        public static FloatMessage GetFloatMessage(float value) { if (_floatMessage == null) _floatMessage = new FloatMessage(); _floatMessage.value = value; return _floatMessage; }
+        static FloatMessage _floatMessage;
+
+        public class Vector3Message : MessageBase { public Vector3 value; }
+        public static Vector3Message GetVector3Message(Vector3 value) { if (_vector3Message == null) _vector3Message = new Vector3Message(); _vector3Message.value = value; return _vector3Message; }
+        static Vector3Message _vector3Message;
+
+        public class BoolMessage : MessageBase { public bool value; }
+        public static BoolMessage GetBoolMessage(bool value) { if (_boolMessage == null) _boolMessage = new BoolMessage(); _boolMessage.value = value; return _boolMessage; }
+        static BoolMessage _boolMessage;
+
         public delegate void OnConnect(NetworkConnection conn);
         [System.Serializable]
         public class NetworkMessageEvent : UnityEngine.Events.UnityEvent<NetworkMessage> { }
