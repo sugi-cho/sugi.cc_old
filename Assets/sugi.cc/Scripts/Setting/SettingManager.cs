@@ -220,7 +220,7 @@ namespace sugi.cc
             {
                 sync = true;
                 NetworkMessageManager.AddHandler(LoadSettingFromJson);
-                NetworkMessageManager.onServerConnect += SyncSettingToClient;
+                NetworkManager.Instance.onServerConnect.AddListener(SyncSettingToClient);
             }
             bool sync;
             public bool canSync { get { return sync; } }

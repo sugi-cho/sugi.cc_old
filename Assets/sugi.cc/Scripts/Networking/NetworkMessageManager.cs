@@ -7,11 +7,9 @@ using NetSystem = UnityEngine.Networking.NetworkSystem;
 
 namespace sugi.cc
 {
-    /// <summary>
-    /// use ReconnectableNetworkManager to Enable "onServerConnect", "onClientConnect" and "onStartServer" delegate.
-    /// </summary>
     public class NetworkMessageManager : MonoBehaviour
     {
+        #region----Custom MessageBase----
         public static NetSystem.EmptyMessage GetEmptyMessage() { if (_emptyMessage == null) _emptyMessage = new NetSystem.EmptyMessage(); return _emptyMessage; }
         static NetSystem.EmptyMessage _emptyMessage;
 
@@ -32,8 +30,8 @@ namespace sugi.cc
         public class BoolMessage : MessageBase { public bool value; }
         public static BoolMessage GetBoolMessage(bool value) { if (_boolMessage == null) _boolMessage = new BoolMessage(); _boolMessage.value = value; return _boolMessage; }
         static BoolMessage _boolMessage;
+        #endregion
 
-        public delegate void OnConnect(NetworkConnection conn);
         [System.Serializable]
         public class NetworkMessageEvent : UnityEngine.Events.UnityEvent<NetworkMessage> { }
 
@@ -49,14 +47,13 @@ namespace sugi.cc
                 var handler = (NetworkMessageDelegate)System.Delegate.CreateDelegate(typeof(NetworkMessageDelegate), target, methodName);
                 AddHandler(handler);
             }
+
+            NetworkManager.Instance.onStartServer.AddListener(RegisterHandlerToServer);
+            NetworkManager.Instance.onClientConnect.AddListener((NetworkConnection conn) => { RegisterHandlerToClient(); });
         }
         #endregion
 
-        public static OnConnect onServerConnect { get; set; }
-        public static OnConnect onClientConnect { get; set; }
-        public static System.Action onStartServer { get; set; }
-
-        static NetworkClient client { get { return NetworkManager.singleton.client; } }
+        static NetworkClient client { get { return NetworkManager.Instance.client; } }
         static bool showInfo;
 
         static string GetIdentifier(NetworkMessageDelegate handler) { return handler.Target.ToString() + handler.Method.Name; }
@@ -70,7 +67,7 @@ namespace sugi.cc
             if (!handlerList.Contains(handler)) handlerList.Add(handler);
         }
 
-        public static void RegistorHandlerToServer()
+        static void RegisterHandlerToServer()
         {
             if (handlerList == null) return;
             var msgType = MsgType.Highest;
@@ -81,7 +78,7 @@ namespace sugi.cc
             }
             SettingManager.AddExtraGuiFunc(ShowNetworkMessageInfo);
         }
-        public static void RegistorHandlerToClient()
+        static void RegisterHandlerToClient()
         {
             if (handlerList == null) return;
             var msgType = MsgType.Highest;

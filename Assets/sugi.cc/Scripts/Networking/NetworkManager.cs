@@ -1,109 +1,108 @@
 ﻿using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.Events;
-using System.Collections;
+using UnityEngine.Networking;
 
 namespace sugi.cc
 {
-    public class ReconnectableNetworkManager : NetworkManager
+    /// <summary>
+    /// NetworkManager. this name is same as Unityengine.Networking.NetworkManager! but I want to use this name;)
+    /// </summary>
+    public class NetworkManager : UnityEngine.Networking.NetworkManager
     {
-        public static ReconnectableNetworkManager Instance
-        {
-            get
-            {
-                if (_Instance == null) _Instance = FindObjectOfType<ReconnectableNetworkManager>();
-                return _Instance;
-            }
-        }
-        static ReconnectableNetworkManager _Instance;
+        public static NetworkManager Instance { get { if (_Instance == null) _Instance = FindObjectOfType<NetworkManager>(); return _Instance; } }
+        static NetworkManager _Instance;
 
         [System.Serializable]
         public class ConnectEvent : UnityEvent<NetworkConnection> { }
+        [System.Serializable]
+        public class NetworkErrorEvent : UnityEvent<NetworkConnection, NetworkError> { }
 
         [SerializeField]
-        Setting setting;
+        public Setting setting { get; private set; }
         [SerializeField]
         string settingFilePath = "Networking/setting.json";
         [SerializeField]
         string[] networkPrefabResourcePathes = new[] { "Networking/Prefabs" };
+
+        #region ----UnityEvents-----
         public UnityEvent onStartServer;
-        public ConnectEvent onClientConnect;
         public ConnectEvent onServerConnect;
+        public ConnectEvent onServerDisconnect;
+        public NetworkErrorEvent onServerError;
 
+        public ConnectEvent onClientSceneChanged;
+        public ConnectEvent onClientConnect;
+        public ConnectEvent onClientDisconnect;
+        public NetworkErrorEvent onClientError;
+        #endregion
 
+        // Use this for initialization
         void Start()
         {
             SettingManager.AddSettingMenu(setting, settingFilePath);
-            this.Invoke(Connect, 1f);
         }
 
-        public void Connect()
+        #region ----Server Callbacks----
+        public override void OnStartServer()
         {
-            if (isNetworkActive)
-                return;
-            if (setting.isServer)
-            {
-                if (setting.isClient)
-                    StartHost();
-                else
-                    StartServer();
-            }
-            else if (setting.isClient)
-                StartClient();
-            else
-                this.Invoke(Connect, 1f);
+            base.OnStartServer();
+            onStartServer.Invoke();
         }
 
+        public override void OnServerConnect(NetworkConnection conn)
+        {
+            base.OnServerConnect(conn);
+            onServerConnect.Invoke(conn);
+        }
+
+        public override void OnServerDisconnect(NetworkConnection conn)
+        {
+            base.OnServerDisconnect(conn);
+            onServerDisconnect.Invoke(conn);
+        }
+
+        public override void OnServerError(NetworkConnection conn, int errorCode)
+        {
+            base.OnServerError(conn, errorCode);
+            var netError = (NetworkError)errorCode;
+            Debug.Log("NetworkError: " + netError);
+            onServerError.Invoke(conn, netError);
+        }
+        #endregion
+
+        #region ----Client Callbacks----
         public override void OnClientSceneChanged(NetworkConnection conn)
         {
             base.OnClientSceneChanged(conn);
-            var nets = Resources.LoadAll<NetworkIdentity>("NetworkPrefabs");
-            foreach (var net in nets)
-                ClientScene.RegisterPrefab(net.gameObject);
+            foreach (var path in networkPrefabResourcePathes)
+            {
+                var nets = Resources.LoadAll<NetworkIdentity>(path);
+                foreach (var net in nets)
+                    ClientScene.RegisterPrefab(net.gameObject);
+            }
+            onClientSceneChanged.Invoke(conn);
         }
-        public override void OnClientError(NetworkConnection conn, int errorCode)
-        {
-            Debug.LogFormat("error code {0}", errorCode);
-            this.Invoke(Connect, 1f);
-            base.OnClientError(conn, errorCode);
-        }
-        public override void OnClientDisconnect(NetworkConnection conn)
-        {
-            Debug.Log("disconnected");
-            this.Invoke(Connect, 1f);
-            base.OnClientDisconnect(conn);
-        }
-
 
         public override void OnClientConnect(NetworkConnection conn)
         {
             base.OnClientConnect(conn);
-            foreach (var networkPrefabResourcePath in networkPrefabResourcePathes)
-            {
-                var netPrefabs = Resources.LoadAll<NetworkIdentity>(networkPrefabResourcePath);
-                foreach (var netPrefab in netPrefabs)
-                    ClientScene.RegisterPrefab(netPrefab.gameObject);
-            }
-            NetworkMessageManager.RegistorHandlerToClient();
-            if (NetworkMessageManager.onClientConnect != null)
-                NetworkMessageManager.onClientConnect.Invoke(conn);
             onClientConnect.Invoke(conn);
         }
-        public override void OnServerConnect(NetworkConnection conn)
+
+        public override void OnClientDisconnect(NetworkConnection conn)
         {
-            base.OnServerConnect(conn);
-            if (NetworkMessageManager.onServerConnect != null)
-                NetworkMessageManager.onServerConnect.Invoke(conn);
-            onServerConnect.Invoke(conn);
+            base.OnClientDisconnect(conn);
+            onClientDisconnect.Invoke(conn);
         }
-        public override void OnStartServer()
+
+        public override void OnClientError(NetworkConnection conn, int errorCode)
         {
-            base.OnStartServer();
-            NetworkMessageManager.RegistorHandlerToServer();
-            if (NetworkMessageManager.onStartServer != null)
-                NetworkMessageManager.onStartServer.Invoke();
-            onStartServer.Invoke();
+            base.OnClientError(conn, errorCode);
+            var netError = (NetworkError)errorCode;
+            Debug.Log("NetworkError: " + netError);
+            onClientError.Invoke(conn, netError);
         }
+        #endregion
 
         [System.Serializable]
         public class Setting : SettingManager.Setting
