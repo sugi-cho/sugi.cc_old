@@ -2,7 +2,7 @@
 
 ##Discription
 
-yes, "sugi.cc" is a name space of "sugi.cho's classes"!!
+yes, "sugi.cc" is a namespace of "sugi.cho's classes"!!
 
 [https://github.com/sugi-cho/sugi.cc](https://github.com/sugi-cho/sugi.cc)
 

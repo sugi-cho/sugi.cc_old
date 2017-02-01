@@ -170,6 +170,7 @@ namespace sugi.cc
         }
         void ShowSettingGUI(Setting setting, string path)
         {
+            var preEdit = setting.edit;
             GUI.contentColor = Color.yellow;
             if (setting.edit = GUILayout.Toggle(setting.edit, path))
             {
@@ -197,6 +198,8 @@ namespace sugi.cc
 
                 GUILayout.Space(16);
             }
+            if (preEdit && setting.edit != preEdit)
+                setting.CancelAndClose();
         }
 
         void OnRenderObject()
@@ -278,20 +281,13 @@ namespace sugi.cc
                 OnClose();
             }
 
-            public virtual void OnGUIFunc()
-            {
-                dataEditor.OnGUI();
-            }
+            public virtual void OnGUIFunc() { dataEditor.OnGUI(); }
 
             public virtual void OnRenderObjectFunc(Camera cam) { }
 
-            protected virtual void OnLoad()
-            {
-            }
+            protected virtual void OnLoad() { }
 
-            protected virtual void OnClose()
-            {
-            }
+            protected virtual void OnClose() { }
         }
     }
 }
