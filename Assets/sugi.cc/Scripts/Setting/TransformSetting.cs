@@ -60,8 +60,9 @@ namespace sugi.cc
             }
             public override void OnGUIFunc()
             {
-                base.OnGUIFunc();
+                control.global = GUILayout.Toggle(control.global, "Control Space in Global");
                 control.mode = (TransformControl.TransformMode)GUILayout.SelectionGrid((int)control.mode, modeSelect, 4);
+                base.OnGUIFunc();
                 target.hasChanged = false;
                 control.Control();
                 ApplySetting();
