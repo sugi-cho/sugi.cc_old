@@ -12,8 +12,8 @@ namespace sugi.cc
         {
             get
             {
-                if (_Instance == null)
-                    _Instance = new GameObject("capture").AddComponent<ScreenCapture>();
+                if (_Instance == null) _Instance = FindObjectOfType<ScreenCapture>();
+                if (_Instance == null) _Instance = new GameObject("capture").AddComponent<ScreenCapture>();
                 return _Instance;
             }
         }

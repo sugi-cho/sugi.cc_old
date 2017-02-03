@@ -23,7 +23,7 @@ namespace sugi.cc
 
     #region set to property
     [System.Serializable]
-    public class StringValueEvent : UnityEvent<string, object> { }
+    public class StringValueEvent : UnityEvent<StringObjectPair> { }
     [System.Serializable]
     public class StringFloatEvent : UnityEvent<StringFloatPair> { }
     [System.Serializable]
