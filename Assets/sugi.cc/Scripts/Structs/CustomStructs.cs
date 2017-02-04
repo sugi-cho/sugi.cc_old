@@ -81,18 +81,6 @@ namespace sugi.cc
             value = m;
         }
     }
-
-    [System.Serializable]
-    public struct StringTexturesPair
-    {
-        public string propName;
-        public Texture[] values;
-        public StringTexturesPair(string s, Texture[] ts)
-        {
-            propName = s;
-            values = ts;
-        }
-    }
     #endregion
 
     [System.Serializable]
@@ -105,18 +93,6 @@ namespace sugi.cc
         {
             minVal = min;
             maxVal = max;
-        }
-    }
-
-    [System.Serializable]
-    public struct GameObjectFloatPair
-    {
-        public GameObject gameObject;
-        public float num;
-        public GameObjectFloatPair(GameObject go, float f)
-        {
-            gameObject = go;
-            num = f;
         }
     }
 }
