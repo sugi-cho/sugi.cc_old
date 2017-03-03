@@ -67,10 +67,14 @@ namespace sugi.cc
         {
             Gaussian.GaussianFilter(s, d == null ? s : d, nIterations, lod);
         }
+        public static RenderTexture GetDownSampled(this Texture s, RenderTexture output, int ds = 1, Material blitMat = null)
+        {
+            return Gaussian.GetDdownSampledRt(s, output, ds, blitMat);
+        }
 
         /**
-		 * use NxN texture
-		 **/
+         * use NxN texture
+         **/
         public static void DrawTexture(this RenderTexture canvas, Vector2 centerUV, float size, Texture tex, Material drawMat = null)
         {
             var pos = new Vector2(centerUV.x * canvas.width, centerUV.y * canvas.height);
@@ -159,6 +163,39 @@ namespace sugi.cc
             renderer.GetPropertyBlock(mpBlock);
             return mpBlock;
         }
+
+        #region SetProps to Renderer & Material
+        public static void SetPropertis(this Renderer r, MaterialProperties props)
+        {
+            foreach (var pair in props.textureProps)
+                r.SetTexture(pair.propName, pair.value);
+            foreach (var pair in props.matrixProps)
+                r.SetMatrix(pair.propName, pair.value);
+            foreach (var pair in props.colorProps)
+                r.SetColor(pair.propName, pair.value);
+            foreach (var pair in props.vectorProps)
+                r.SetVector(pair.propName, pair.value);
+            foreach (var pair in props.floatProps)
+                r.SetFloat(pair.propName, pair.value);
+            foreach (var pair in props.intProps)
+                r.SetFloat(pair.propName, pair.value);
+        }
+        public static void SetPropertis(this Material mat, MaterialProperties props)
+        {
+            foreach (var pair in props.textureProps)
+                mat.SetTexture(pair.propName, pair.value);
+            foreach (var pair in props.matrixProps)
+                mat.SetMatrix(pair.propName, pair.value);
+            foreach (var pair in props.colorProps)
+                mat.SetColor(pair.propName, pair.value);
+            foreach (var pair in props.vectorProps)
+                mat.SetVector(pair.propName, pair.value);
+            foreach (var pair in props.floatProps)
+                mat.SetFloat(pair.propName, pair.value);
+            foreach (var pair in props.intProps)
+                mat.SetInt(pair.propName, pair.value);
+        }
+        #endregion
 
         #region SetPropertyToRender
 

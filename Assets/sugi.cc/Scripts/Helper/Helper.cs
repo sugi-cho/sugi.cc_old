@@ -32,7 +32,13 @@ namespace sugi.cc
             UnityEditor.AssetDatabase.Refresh();
 #endif
         }
-
+        /// <summary>
+        /// this function create rendertexture.
+        /// </summary>
+        /// <param name="s">source RenderTexture</param>
+        /// <param name="rt">if output RenderTexture is not null, output will be Released.</param>
+        /// <param name="downSample">down sample</param>
+        /// <returns></returns>
         public static RenderTexture CreateRenderTexture(RenderTexture s, RenderTexture rt = null, int downSample = 0)
         {
             rt = CreateRenderTexture(s.width >> downSample, s.height >> downSample, rt, s.format);
@@ -65,6 +71,13 @@ namespace sugi.cc
             }).ToArray();
         }
 
+        /// <summary>
+        /// return true if invalid target.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        /// <param name="downSample"></param>
+        /// <returns></returns>
         public static bool CheckRtSize(Texture source, Texture target, int downSample = 0)
         {
             return target == null || target.width != source.width >> downSample || target.height != source.height >> downSample;
@@ -164,6 +177,20 @@ namespace sugi.cc
 
         #endregion
 
+        public static RenderTexture GetDdownSampledRt(Texture s, RenderTexture blitTarget, int lod, Material blitMat)
+        {
+            if (Helper.CheckRtSize(s, blitTarget, lod))
+                blitTarget = Helper.CreateRenderTexture(s.width >> lod, s.height >> lod, blitTarget);
+            var ds = DownSample(s, lod, gaussianMat);
+            if (blitMat != null)
+                Graphics.Blit(ds, blitTarget, blitMat);
+            else
+                Graphics.Blit(ds, blitTarget);
+
+            RenderTexture.ReleaseTemporary(ds);
+            return blitTarget;
+        }
+
         public static RenderTexture GaussianFilter(RenderTexture s, RenderTexture d, int nIterations = 3, int lod = 1)
         {
             var ds = DownSample(s, lod, gaussianMat);
@@ -195,9 +222,9 @@ namespace sugi.cc
             RenderTexture.ReleaseTemporary(tmp1);
         }
 
-        static RenderTexture DownSample(RenderTexture src, int lod, Material gaussianMat)
+        static RenderTexture DownSample(Texture src, int lod, Material gaussianMat)
         {
-            var dst = RenderTexture.GetTemporary(src.width, src.height, 0, src.format);
+            var dst = RenderTexture.GetTemporary(src.width, src.height, 0);
             src.filterMode = FilterMode.Bilinear;
             Graphics.Blit(src, dst);
 
@@ -235,6 +262,15 @@ namespace sugi.cc
             return a * t3 + b * t2 + c * t + d;
         }
     }
-
+    [System.Serializable]
+    public class MaterialProperties
+    {
+        public StringTexturePair[] textureProps;
+        public StringMatrixPair[] matrixProps;
+        public StringColorPair[] colorProps;
+        public StringVectorPair[] vectorProps;
+        public StringFloatPair[] floatProps;
+        public StringIntPair[] intProps;
+    }
 
 }
