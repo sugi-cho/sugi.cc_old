@@ -157,7 +157,8 @@ namespace sugi.cc
 
         void Start()
         {
-            OscController.Instance.AddCallbacks(this);
+            if (OscController.Instance != null)
+                OscController.Instance.AddCallbacks(this);
             InitializeSettings();
             for (var i = 0; i < settings.Length; i++)
             {

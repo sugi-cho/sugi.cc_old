@@ -75,7 +75,7 @@ namespace sugi.cc
         /**
          * use NxN texture
          **/
-        public static void DrawTexture(this RenderTexture canvas, Vector2 centerUV, float size, Texture tex, Material drawMat = null)
+        public static void DrawTexture(this RenderTexture canvas, Vector2 centerUV, float size, Texture tex, Material drawMat = null, int pass = 0)
         {
             var pos = new Vector2(centerUV.x * canvas.width, centerUV.y * canvas.height);
             size *= canvas.height;
@@ -86,7 +86,7 @@ namespace sugi.cc
             GL.LoadIdentity();
             GL.LoadProjectionMatrix(projMat);
             RenderTexture.active = canvas;
-            Graphics.DrawTexture(rect, tex, drawMat);
+            Graphics.DrawTexture(rect, tex, drawMat, pass);
             RenderTexture.active = null;
             GL.PopMatrix();
         }

@@ -63,7 +63,7 @@ float3 rotateWithQuaternion(float3 v, float4 r)
 float4 getAngleAxisRotation(float3 v, float3 axis, float angle) {
 	axis = normalize(axis);
 	float s, c;
-	sincos(angle, s, c);
+	sincos(angle*0.5, s, c);
 	return float4(axis.x*s, axis.y*s, axis.z*s, c);
 }
 

@@ -51,7 +51,8 @@ namespace sugi.cc
                 return;
             var newObj = Object.Instantiate<Object>(o);
             var path = AssetDatabase.GetAssetPath(o);
-            path = Path.GetDirectoryName(path);
+            Debug.Log(path);
+            path = path == "" ? "Assets" : Path.GetDirectoryName(path);
             AssetDatabase.CreateAsset(newObj, path + '/' + o.name + ".asset");
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

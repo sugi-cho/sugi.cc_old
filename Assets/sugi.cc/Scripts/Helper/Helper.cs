@@ -66,6 +66,7 @@ namespace sugi.cc
             return Enumerable.Range(0, 2).Select(b =>
             {
                 var rt = CreateRenderTexture(source, rts != null && rts.Length == 2 ? rts[b] : null, downSample);
+                rt.wrapMode = source.wrapMode;
                 rt.name = "helper.createRts." + b;
                 return rt;
             }).ToArray();
@@ -85,7 +86,7 @@ namespace sugi.cc
 
         public static void ReleaseRenderTexture(RenderTexture rt)
         {
-            if (rt == null)
+            if (rt == null || RenderTexture.active == rt)
                 return;
             rt.Release();
             Object.Destroy(rt);
@@ -156,6 +157,35 @@ namespace sugi.cc
         }
         static Dictionary<PrimitiveType, Mesh> primitiveMeshMap = new Dictionary<PrimitiveType, Mesh>();
 
+        /// <summary>
+        /// Determines if the given point is inside the polygon http://stackoverflow.com/questions/4243042/c-sharp-point-in-polygon
+        /// </summary>
+        /// <param name="polygon">the vertices of polygon</param>
+        /// <param name="testPoint">the given point</param>
+        /// <returns>true if the point is inside the polygon; otherwise, false</returns>
+        public static bool IsInsidePolygon(Vector2[] polygon, Vector2 testPoint)
+        {
+            var result = false;
+            var minX = polygon.Min(p => p.x);
+            var maxX = polygon.Max(p => p.x);
+            var minY = polygon.Min(p => p.y);
+            var maxY = polygon.Max(p => p.y);
+            if (testPoint.x < minX || maxX < testPoint.x || testPoint.y < minY || maxY < testPoint.y)
+                return result;
+            int j = polygon.Count() - 1;
+            for (int i = 0; i < polygon.Count(); i++)
+            {
+                if (polygon[i].y < testPoint.y && polygon[j].y >= testPoint.y || polygon[j].y < testPoint.y && polygon[i].y >= testPoint.y)
+                {
+                    if (polygon[i].x + (testPoint.y - polygon[i].y) / (polygon[j].y - polygon[i].y) * (polygon[j].x - polygon[i].x) < testPoint.x)
+                    {
+                        result = !result;
+                    }
+                }
+                j = i;
+            }
+            return result;
+        }
     }
 
     // from nobnak https://github.com/nobnak/GaussianBlurUnity

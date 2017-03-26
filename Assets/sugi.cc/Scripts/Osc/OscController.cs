@@ -13,7 +13,14 @@ namespace sugi.cc
 {
     public class OscController : OscPort
     {
-        public static OscController Instance { get { if (_Instance == null) _Instance = FindObjectOfType<OscController>(); return _Instance; } }
+        public static OscController Instance
+        {
+            get
+            {
+                if (_Instance == null) _Instance = FindObjectOfType<OscController>();
+                return _Instance;
+            }
+        }
         static OscController _Instance;
 
         public bool dontDestroyOnLoad;
