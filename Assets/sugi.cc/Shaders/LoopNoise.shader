@@ -1,4 +1,6 @@
-﻿Shader "Noise/Loop/Simple"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Noise/Loop/Simple"
 {
 	Properties
 	{
@@ -15,7 +17,7 @@
 	v2f_img vert(appdata_base v)
 	{
 		v2f_img o;
-		o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+		o.pos = UnityObjectToClipPos(v.vertex);
 		o.uv = v.texcoord.xy;
 		return o;
 	}

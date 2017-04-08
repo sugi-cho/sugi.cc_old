@@ -1,4 +1,6 @@
-﻿Shader "Unlit/unlit-ShadowCast"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Unlit/unlit-ShadowCast"
 {
 	Properties
 	{
@@ -29,7 +31,7 @@
 			v.vertex.xz *= v.vertex.y*v.vertex.y*2;
 			v.vertex.y -= 0.5;
 			v2f o;
-			o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+			o.pos = UnityObjectToClipPos(v.vertex);
 			o.hpos = o.pos;
 			o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 			return o;
@@ -47,7 +49,7 @@
 			v.vertex.xz *= v.vertex.y*v.vertex.y*2;
 			v.vertex.y -= 0.5;
 			v2f o;
-			float4 opos = mul(UNITY_MATRIX_MVP, v.vertex);
+			float4 opos = UnityObjectToClipPos(v.vertex);
 			o.pos = opos;
 			opos.z += saturate(unity_LightShadowBias.x/opos.w);
 			float clamped = max(opos.z, opos.w * 0);

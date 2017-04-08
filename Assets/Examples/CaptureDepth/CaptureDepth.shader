@@ -1,4 +1,6 @@
-﻿Shader "Hidden/CaptureDepth" {
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Hidden/CaptureDepth" {
 	Properties {
 		_MainTex ("Texture", 2D) = "white" {}
         _Blend ("Blend", Range(0,1)) = 0
@@ -32,7 +34,7 @@
                     uvFromBottom.y = 1 - uvFromBottom.y;
 
 				v2f o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = float4(v.uv, uvFromBottom);
 				return o;
 			}
