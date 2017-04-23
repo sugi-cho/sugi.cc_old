@@ -262,5 +262,7 @@ namespace sugi.cc
             var z = Random.Range(-bounds.extents.z, bounds.extents.z);
             return bounds.center + new Vector3(x, y, z);
         }
+
+        public static RenderTexture[] GetPositionNormalTexture(this Mesh mesh, int width = 512, int height = 512) { return MeshInfoTexture.GeneratePositionNormalTexture(mesh, width, height); }
     }
 }

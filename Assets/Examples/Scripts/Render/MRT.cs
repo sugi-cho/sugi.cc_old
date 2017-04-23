@@ -27,7 +27,7 @@ public class MRT : MonoBehaviour
 	void Start ()
 	{
 		cam = GetComponent<Camera> ();
-		cam.hdr = true;
+		cam.allowHDR = true;
 		rts = new RenderTexture[bufferNames.Length];
 		buffers = new RenderBuffer[bufferNames.Length];
 		for (int i = 0; i < rts.Length; i++) {
