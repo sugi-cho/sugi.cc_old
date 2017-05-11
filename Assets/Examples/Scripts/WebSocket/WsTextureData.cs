@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using sugi.cc;
+using MessagePack;
 
 public class WsTextureData : WebSocketDataBehaviour<WsTextureData.Data>
 {
@@ -32,7 +33,7 @@ public class WsTextureData : WebSocketDataBehaviour<WsTextureData.Data>
         SendData(data);
     }
 
-    [System.Serializable]
+    [MessagePackObject(keyAsPropertyName: true)]
     public class Data
     {
         public int texWidth = 512;

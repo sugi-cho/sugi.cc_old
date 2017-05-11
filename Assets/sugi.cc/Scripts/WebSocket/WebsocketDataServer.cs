@@ -2,6 +2,7 @@
 using UnityEngine;
 using WebSocketSharp;
 using WebSocketSharp.Server;
+using MessagePack;
 
 namespace sugi.cc
 {
@@ -35,7 +36,14 @@ namespace sugi.cc
             protected override void OnMessage(MessageEventArgs e)
             {
                 var str = e.Data;
-                T data = JsonUtility.FromJson<T>(str);
+                T data = default(T);
+                if (e.IsPing)
+                    return;
+                else if (e.IsBinary)
+                    data = MessagePackSerializer.Deserialize<T>(e.RawData);
+                else if (e.IsText)
+                    data = JsonUtility.FromJson<T>(str);
+
                 lock (recievedData)
                     recievedData.Enqueue(data);
             }

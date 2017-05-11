@@ -254,13 +254,13 @@ namespace sugi.cc
 
         static RenderTexture DownSample(Texture src, int lod, Material gaussianMat)
         {
-            var dst = RenderTexture.GetTemporary(src.width, src.height, 0);
+            var dst = RenderTexture.GetTemporary(src.width, src.height, 0, RenderTextureFormat.ARGBHalf);
             src.filterMode = FilterMode.Bilinear;
             Graphics.Blit(src, dst);
 
             for (var i = 0; i < lod; i++)
             {
-                var tmp = RenderTexture.GetTemporary(dst.width >> 1, dst.height >> 1, 0, dst.format);
+                var tmp = RenderTexture.GetTemporary(dst.width >> 1, dst.height >> 1, 0, RenderTextureFormat.ARGBHalf);
                 dst.filterMode = FilterMode.Bilinear;
                 Graphics.Blit(dst, tmp, gaussianMat, 0);
                 RenderTexture.ReleaseTemporary(dst);

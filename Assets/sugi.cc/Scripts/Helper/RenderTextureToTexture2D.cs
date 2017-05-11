@@ -7,10 +7,10 @@ using UnityEditor;
 
 namespace sugi.cc
 {
-    public class RenderTextureToTexture2D : MonoBehaviour
+    public class RenderTextureToTexture2D
     {
 
-        static Texture2D Convert(RenderTexture rt)
+        public static Texture2D Convert(RenderTexture rt)
         {
             TextureFormat format;
 
