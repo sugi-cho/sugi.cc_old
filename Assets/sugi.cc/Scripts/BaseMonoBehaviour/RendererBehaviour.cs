@@ -1,9 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public abstract class RendererBehaviour : MonoBehaviour
+namespace sugi.cc
 {
-    public new Renderer renderer { get { if (_renderer == null) _renderer = GetComponentInChildren<Renderer>(); return _renderer; } }
-    Renderer _renderer;
+    public abstract class RendererBehaviour : MonoBehaviour
+    {
+        public new Renderer renderer { get { if (_r == null) _r = GetComponentInChildren<Renderer>(); return _r; } }
+        Renderer _r;
+        public Renderer[] renderers { get { if (_rs == null) _rs = GetComponentsInChildren<Renderer>(); return _rs; } }
+        Renderer[] _rs;
+    }
 }

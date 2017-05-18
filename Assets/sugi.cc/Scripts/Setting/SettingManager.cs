@@ -138,10 +138,12 @@ namespace sugi.cc
                 OpenInFileBrowser.Open(Application.persistentDataPath);
             GUILayout.Space(16f);
             GUILayout.Label("Settings:");
-            settingTree.ForEach(node =>
-            {
-                ShowSettingNodeGUI(node);
-            });
+
+            if (settingTree != null)
+                settingTree.ForEach(node =>
+                {
+                    ShowSettingNodeGUI(node);
+                });
 
             GUI.contentColor = Color.white;
             if (extraGuiFunc != null)

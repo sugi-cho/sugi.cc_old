@@ -269,27 +269,91 @@ namespace sugi.cc
             return dst;
         }
     }
+    [System.Serializable]
     public class CoonsCurve
     {
+        public Vector3 position0;
+        public Vector3 position1;
+        public Vector3 velocity0;
+        public Vector3 velocity1;
+
         private Vector3 a, b, c, d;
 
         public CoonsCurve(Vector3 p0, Vector3 p1, Vector3 v0, Vector3 v1)
         {
             SetVertices(p0, p1, v0, v1);
+            position0 = p0;
+            position1 = p1;
+            velocity0 = v0;
+            velocity1 = v1;
         }
 
+        public void SetVertices()
+        {
+            var p0 = position0;
+            var p1 = position1;
+            var v0 = velocity0;
+            var v1 = velocity1;
+            SetVertices(p0, p1, v0, v1);
+        }
         public void SetVertices(Vector3 p0, Vector3 p1, Vector3 v0, Vector3 v1)
         {
-            this.a = 2 * p0 - 2 * p1 + v0 + v1;
-            this.b = -3 * p0 + 3 * p1 - 2 * v0 - v1;
-            this.c = v0;
-            this.d = p0;
+            a = 2 * p0 - 2 * p1 + v0 + v1;
+            b = -3 * p0 + 3 * p1 - 2 * v0 - v1;
+            c = v0;
+            d = p0;
+
+            position0 = p0;
+            position1 = p1;
+            velocity0 = v0;
+            velocity1 = v1;
         }
         public Vector3 Interpolate(float t)
         {
             var t2 = t * t;
             var t3 = t2 * t;
             return a * t3 + b * t2 + c * t + d;
+        }
+    }
+    [System.Serializable]
+    public class CoonsChain
+    {
+        public Vector3[] positions;
+        public Vector3[] velocities;
+
+        CoonsCurve[] curves;
+
+        public Vector3 Interpolate(float t)
+        {
+            if (curves == null)
+                return Vector3.zero;
+
+            var idx = Mathf.FloorToInt(t * curves.Length);
+            if (idx == curves.Length)
+                idx--;
+            t = t * curves.Length - idx;
+            Gizmos.color = Color.Lerp(Color.red, Color.blue, t);
+            return curves[idx].Interpolate(t);
+        }
+        public void UpdateCurves()
+        {
+            if (positions.Length != velocities.Length || positions.Length < 2)
+                return;
+            if (curves != null && curves.Length != positions.Length - 1)
+                curves = null;
+            if (curves == null)
+                curves = new CoonsCurve[positions.Length - 1];
+            for (var i = 0; i < curves.Length; i++)
+            {
+                if (curves[i] == null)
+                    curves[i] = new CoonsCurve(positions[i], positions[i + 1], velocities[i], velocities[i + 1]);
+                else
+                    curves[i].SetVertices(positions[i], positions[i + 1], velocities[i], velocities[i + 1]);
+            }
+        }
+        public void OnDrawGizmos(float dt = 0.05f) {
+            for (var t = 0f; t < 1f; t += dt)
+                Gizmos.DrawLine(Interpolate(t), Interpolate(t + dt));
         }
     }
     [System.Serializable]
