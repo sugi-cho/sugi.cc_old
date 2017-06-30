@@ -14,8 +14,6 @@ using System.Runtime.InteropServices;
 /// </summary>
 public class AlwaysOnTop : MonoBehaviour
 {
-    public string windowTitle;
-
     #region WIN32API
 
     public static readonly System.IntPtr HWND_TOPMOST = new System.IntPtr(-1);
@@ -118,7 +116,7 @@ public class AlwaysOnTop : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        AssignTopmostWindow(windowTitle, true);
+        AssignTopmostWindow(Application.productName, true);
     }
 
     public bool AssignTopmostWindow(string WindowTitle, bool MakeTopmost)
