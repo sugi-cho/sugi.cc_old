@@ -7,7 +7,7 @@
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" }
-		LOD 100 ZTest Always
+		LOD 100 ZTest Always Cull Off
 
 		Pass
 		{
@@ -22,13 +22,13 @@
 				float4 vertex : POSITION;
 				float3 normal : NORMAL;
 				float2 uv : TEXCOORD0;
+				float2 uv2 : TEXCOORD1;
 			};
 
 			struct v2f
 			{
-				float2 uv : TEXCOORD0;
-				float3 vPos : TEXCOORD1;
-				float3 vNorm : TEXCOORD2;
+				float3 vPos : TEXCOORD0;
+				float3 vNorm : TEXCOORD1;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -42,12 +42,11 @@
 			{
 				float3 vPos = v.vertex.xyz;
 				float3 vNorm = v.normal;
-				v.vertex.xyz = float3(v.uv,0);
+				v.uv2.y = 1.0-v.uv2.y;
 				
 				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.vertex = float4(float2(v.uv.x,1-v.uv.y)*2.0-1.0,0.0,1.0);
-				o.uv = v.uv;
+				//use uv2 generated for light-map
+				o.vertex = float4(v.uv2*2.0-1.0,0.0,1.0);
 				o.vPos = vPos;
 				o.vNorm = vNorm;
 				return o;

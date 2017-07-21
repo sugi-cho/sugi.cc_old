@@ -51,7 +51,7 @@ public class ScreenRecorder : MonoBehaviour
 				if (frameCount > 0)
 				{
 					var name = "Capture/frame" + frameCount.ToString("0000") + ".png";
-					Application.CaptureScreenshot(name, setting.superSize);
+					UnityEngine.ScreenCapture.CaptureScreenshot(name, setting.superSize);
 				}
 
 				frameCount++;

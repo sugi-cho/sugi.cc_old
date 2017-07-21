@@ -352,6 +352,7 @@ namespace sugi.cc
             }
         }
         public void OnDrawGizmos(float dt = 0.05f) {
+            UpdateCurves();
             for (var t = 0f; t < 1f; t += dt)
                 Gizmos.DrawLine(Interpolate(t), Interpolate(t + dt));
         }
