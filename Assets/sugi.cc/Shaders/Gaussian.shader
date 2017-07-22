@@ -1,6 +1,4 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Hidden/Gaussian"
+﻿Shader "Hidden/Gaussian"
 {
 	Properties {
 		_MainTex ("Main Tex", 2D) = "white" {}
