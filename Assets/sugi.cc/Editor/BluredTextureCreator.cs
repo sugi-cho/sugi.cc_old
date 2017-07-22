@@ -4,7 +4,7 @@ using UnityEditor;
 using sugi.cc;
 
 [CreateAssetMenu]
-public class BluredTextureCreator : WindowItem
+public class BluredTextureCreator : CustomEditorWindow.WindowItem
 {
     public Texture source;
     public int texWidth;
