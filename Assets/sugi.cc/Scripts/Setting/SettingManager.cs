@@ -9,7 +9,7 @@ using NetSystem = UnityEngine.Networking.NetworkSystem;
 
 namespace sugi.cc
 {
-    public class SettingManager : MonoBehaviour
+    public class SettingManager : SingletonMonoBehaviour<SettingManager>
     {
 
         public static Material drawLineMat { get { if (_mat == null) _mat = new Material(Shader.Find("Particles/Alpha Blended")); return _mat; } }
@@ -34,23 +34,6 @@ namespace sugi.cc
                 Instance.extraGuiFuncList.Add(func);
             }
         }
-
-
-        #region instance
-
-        public static SettingManager Instance
-        {
-            get
-            {
-                if (_Instance == null)
-                    _Instance = new GameObject("SettingManager").AddComponent<SettingManager>();
-                return _Instance;
-            }
-        }
-
-        static SettingManager _Instance;
-
-        #endregion
 
         public static KeyCode EditKey = KeyCode.E;
         List<SettingTreeNode> settingTree;

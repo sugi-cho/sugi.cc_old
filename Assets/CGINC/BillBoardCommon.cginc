@@ -6,7 +6,7 @@
 float4 vPosBillboard(float4 pos, float2 uv, float size){
 	float4 center = pos;
 	center.xy -= uv-0.5;
-	half4 vPos = mul(UNITY_MATRIX_MV, center);
+    half4 vPos = UnityObjectToViewPos(center);
 	vPos.xy += (uv-0.5)*size;
 	return vPos;
 }
